@@ -5,19 +5,17 @@
 #define SIZE 512
 
 int main() {
-//    ssize_t nread;
-//    char buf[SIZE];
-//
-//    while ((nread = read(0, buf, SIZE)) > 0)
-//        write(1, buf, nread);
-//
-//    exit(0);
-
     FILE *file_stream;
     if ((file_stream = fopen("test.txt", "r+")) == NULL) {
         printf("Could not open the test file! \n");
         exit(0);
     }
 
+    int k = getc(file_stream);
+    printf("%d\n", k);
+    int c = putc('b', file_stream);
+    printf("%d\n", c);
+    c = putc('c', file_stream);
+    printf("%d", c);
     return 0;
 }
