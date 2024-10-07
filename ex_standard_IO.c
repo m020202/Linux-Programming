@@ -15,7 +15,7 @@ int main() {
     printf("%d\n", k);
     int c = putc('b', file_stream);
     printf("%d\n", c);
-    c = putc('c', file_stream);
+    c = putc(100, file_stream);
     printf("%d", c);
     return 0;
 }
