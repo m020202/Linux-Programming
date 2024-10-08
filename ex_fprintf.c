@@ -2,17 +2,13 @@
 
 int main() {
     FILE *fp = fopen("test.txt", "w");
-
-    if (fp == NULL) {
-        perror("파일 열기 실패");
-        return -1;
-    }
+    FILE *fp2 = fopen("test.txt", "w");
 
     int number = 42;
     const char *text = "Hello world!";
 
     fprintf(fp, "숫자: %d\n", number);
-    fprintf(fp, "문자열: %s\n", text);
+    fprintf(fp2, "문자열: %s\n", text);
 
     fclose(fp);
 
