@@ -1,1 +1,1 @@
-문자열: Hello world!
+After dup2()
