@@ -3,16 +3,13 @@
 #include <unistd.h>
 
 int main() {
-    if (link("test.txt", "test3.txt") == -1) {
+    if (symlink("test2.txt", "test4.txt") == -1) {
         perror("link failed");
         exit(1);
     }
 
-    if (unlink("test.txt") == -1) {
-        perror("unlink failed");
-        unlink("test3.txt");
-        exit(1);
-    }
+    char* buf[10];
+    ssize_t len = readlink("test4.txt", buf, 10);
 
-    printf("succeeded!");
+    printf("%s", buf);
 }
