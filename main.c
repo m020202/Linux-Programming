@@ -1,13 +1,25 @@
-#include <fcntl.h>
-#include <unistd.h>
+#include <dirent.h>
 #include <printf.h>
 
 int main() {
-    int fd = open("test", O_RDWR, 0644);
+    struct dirent *d;
+    DIR *dp;
 
-    int offset = lseek(fd, (off_t) 100, SEEK_CUR);
-    offset = lseek(fd, (off_t) 10, SEEK_CUR);
-    printf("%d", offset);
+    if ((dp = opendir("강의 자료")) == NULL)
+        return -1;
+
+    while (d = readdir(dp)) {
+        if (d->d_ino != 0)
+            printf("%s \n", d->d_name);
+    }
+
+    rewinddir(dp);
+
+    while (d = readdir(dp)) {
+        if (d->d_ino != 0)
+            printf("%s \n", d->d_name);
+    }
+    closedir(dp);
 
     return 0;
 }
