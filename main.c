@@ -1,25 +1,18 @@
 #include <dirent.h>
 #include <printf.h>
+#include <unistd.h>
+
+void my_pwd(void);
 
 int main() {
-    struct dirent *d;
-    DIR *dp;
+    my_pwd();
+}
 
-    if ((dp = opendir("강의 자료")) == NULL)
-        return -1;
-
-    while ((d=readdir(dp)) != NULL) {
-        if (d->d_ino != 0)
-            printf("%s \n", d->d_name);
+void my_pwd(void){
+    char dirname[200];
+    if (getcwd(dirname, 200) == NULL) {
+        perror("getcwd error");
     }
-
-    rewinddir(dp);
-
-    while ((d=readdir(dp)) != NULL) {
-        if (d->d_ino != 0)
-            printf("%s \n", d->d_name);
-    }
-    closedir(dp);
-
-    return 0;
+    else
+        printf("%s\n", dirname);
 }
