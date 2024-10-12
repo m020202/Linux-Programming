@@ -1,5 +1,6 @@
 #include <printf.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 
 int main() {
@@ -11,9 +12,10 @@ int main() {
 
     if (pid == 0) {
         printf("I'm the child\n");
-        printf("%d\n", getpid());
+        printf("%d\n", getppid());
     }
     else if (pid > 0) {
+        wait(0);
         printf("I'm the parent, child has pid %d\n", pid);
         printf("%d\n", getpid());
     }
