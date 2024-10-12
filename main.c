@@ -5,6 +5,7 @@
 int main() {
     pid_t  pid;
     printf("Just one process so far\n");
+    printf("Calling fork ...\n");
 
     pid = fork();
 
