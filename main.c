@@ -9,10 +9,14 @@ int main() {
 
     pid = fork();
 
-    if (pid == 0)
+    if (pid == 0) {
         printf("I'm the child\n");
-    else if (pid > 0)
+        printf("%d\n", getpid());
+    }
+    else if (pid > 0) {
         printf("I'm the parent, child has pid %d\n", pid);
+        printf("%d\n", getpid());
+    }
     else
         printf("Fork returned error code, no child\n");
 
