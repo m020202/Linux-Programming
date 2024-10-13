@@ -1,9 +1,28 @@
 #include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
 
+
+int fatal(char *s) {
+    perror(s);
+    exit(1);
+}
 
 int main() {
-    const char *argin[] = {"./ex_link", "hello", "world", (char *) 0};
-    execv(argin[0], argin);
-    return 0;
+    pid_t pid;
+
+    switch(pid = fork()) {
+        case -1:
+            fatal("fork failed");
+            break;
+        case 0:
+            execl("/bin/ls", "ls", "-l", NULL);
+            fatal("exec failed");
+            break;
+        default:
+            wait(0);
+            printf("ls completed\n");
+            exit(0);
+    }
 };
 
