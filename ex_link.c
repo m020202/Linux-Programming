@@ -2,14 +2,9 @@
 #include <stdio.h>
 #include <unistd.h>
 
-int main() {
-    if (symlink("test2.txt", "test4.txt") == -1) {
-        perror("link failed");
-        exit(1);
+int main(int argc, char **argv) {
+    while (--argc > 0) {
+        printf("%s ", *++argv);
     }
-
-    char* buf[10];
-    ssize_t len = readlink("test4.txt", buf, 10);
-
-    printf("%s", buf);
+    printf("\n");
 }

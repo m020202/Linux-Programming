@@ -1,15 +1,9 @@
-#include <printf.h>
 #include <unistd.h>
 
 
 int main() {
-    const char *args[] = {"ls", "-l", (char* ) 0};
-    printf("executing ls\n");
-
-    execv("/bin/ls", args);
-
-    perror("execl failed to run ls");
-
+    const char *argin[] = {"./ex_link", "hello", "world", (char *) 0};
+    execv(argin[0], argin);
     return 0;
-}
+};
 
