@@ -3,9 +3,10 @@
 
 
 int main() {
+    const char *args[] = {"ls", "-l", (char* ) 0};
     printf("executing ls\n");
 
-    execl("/bin/ls", "ls", "-l", (char *) 0);
+    execv("/bin/ls", args);
 
     perror("execl failed to run ls");
 
