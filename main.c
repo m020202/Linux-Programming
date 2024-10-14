@@ -3,27 +3,27 @@
 #include <stdio.h>
 #include <sys/fcntl.h>
 
+void func1() { printf("printf func1\n"); }
+void func2() { printf("printf fucn2\n"); }
+void func3() { printf("printf func3\n"); }
+void func4() { printf("printf func4\n"); }
+
 int main() {
-    int fd;
     pid_t pid;
-    char buf[10];
-
-    fd = open("data", O_RDONLY);
-    read(fd, buf, 10);
-    fcntl(fd, F_SETFD, 1);
-
-    switch (pid = fork()) {
-        case -1:
-            perror("failed");
-            break;
-        case 0:
-            execl("/bin/ls", "ls", "-l", NULL);
-            break;
-        default:
-            wait(0);
-            int res = fcntl(fd, F_GETFD, 0);
-            printf("%d", res);
+    atexit(func1);
+    atexit(func2);
+    atexit(func3);
+    atexit(func4);
+    if ((pid = fork()) < 0) {
+        perror("fork failed");
+        exit(1);
     }
-
-    return 0;
+    if (pid == 0) {
+        printf("Child process is called\n");
+        printf("Child process calls exit\n");
+        exit(0);
+    }
+    wait(NULL);
+    printf("Parent process calls exit\n");
+    exit(0);
 };
