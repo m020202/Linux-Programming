@@ -1,25 +1,38 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/fcntl.h>
 
-int docommand(char *command) {
-    pid_t pid;
-
-    if ((pid = fork()) < 0)
-        return -1;
-
-    if (pid == 0) {
-        execl("/bin/sh", "sh", "-c", command, NULL);
-        perror("esxecl");
-        exit(1);
-    }
-
-    wait(0);
-
-    return 0;
-}
+int printpos(const char* string, int filedes);
 
 int main() {
-    docommand("echo hello world");
+    int fd;
+    pid_t pid;
+    char buf[10];
+
+    fd = open("data", O_RDONLY);
+    read(fd, buf, 10);
+    printpos("Before fork", fd);
+
+    switch (pid = fork()) {
+        case -1:
+            perror("fork failed");
+            break;
+        case 0:
+            printpos("Child before read", fd);
+            read(fd, buf, 10);
+            break;
+        default:
+            wait(0);
+            printpos("Parent after wait", fd);
+    }
 };
+
+int printpos(const char* string, int filedes) {
+    off_t pos;
+
+    if ((pos = lseek(filedes, 0, SEEK_CUR)) == -1)
+        perror("lseek failed");
+    printf("%s:%d\n", string, pos);
+}
 
