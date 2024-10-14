@@ -9,7 +9,7 @@ int docommand(char *command) {
         return -1;
 
     if (pid == 0) {
-        execl("/bin/sh", "sh", "-c", NULL);
+        execl("/bin/sh", "sh", "-c", command, NULL);
         perror("esxecl");
         exit(1);
     }
@@ -19,26 +19,7 @@ int docommand(char *command) {
     return 0;
 }
 
-int fatal(char *s) {
-    perror(s);
-    exit(1);
-}
-
 int main() {
-    pid_t pid;
-
-    switch(pid = fork()) {
-        case -1:
-            fatal("fork failed");
-            break;
-        case 0:
-            execl("/bin/ls", "ls", "-l", NULL);
-            fatal("exec failed");
-            break;
-        default:
-            wait(0);
-            printf("ls completed\n");
-            exit(0);
-    }
+    docommand("echo hello world");
 };
 
