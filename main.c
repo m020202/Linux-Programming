@@ -1,10 +1,13 @@
 #include <ulimit.h>
 #include <stdio.h>
 
-int main(int argc, char *argv[]) {
+int main() {
     long currentFileSize;
 
-    currentFileSize = ulimit(UL_GETFSIZE);
+    if ((currentFileSize = ulimit(UL_SETFSIZE, 10 * 1024 * 1024)) == -1) {
+        perror("ulimit:");
+        return 1;
+    }
 
     printf("Current maximum file size: %ld", currentFileSize);
 };
