@@ -2,8 +2,15 @@
 #include <stdio.h>
 
 int main() {
-    printf("%d\n", getpid());
-    printf("%d\n", getpgid(1));
-    setpgid(1, 0);
-    printf("%d\n", getpgid(1));
+    pid_t pid;
+    pid_t ppid;
+
+    pid = getpid();
+    ppid = getppid();
+
+    printf("PID: %d, PPID: %d\n", pid, ppid);
+
+    sleep(10);
+
+    return 0;
 };
