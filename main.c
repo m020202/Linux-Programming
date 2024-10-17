@@ -1,13 +1,19 @@
-#include <ulimit.h>
+#include <unistd.h>
 #include <stdio.h>
 
 int main() {
-    long currentFileSize;
+    int increment = 5;
 
-    if ((currentFileSize = ulimit(UL_SETFSIZE, 10 * 1024 * 1024)) == -1) {
-        perror("ulimit:");
+    int current_nice = nice(0);
+    printf("Current nice: %d\n", current_nice);
+
+    if (nice(increment) == -1) {
+        perror("nice: ");
         return 1;
     }
 
-    printf("Current maximum file size: %ld", currentFileSize);
+    int new_nice = nice(0);
+    printf("New nice value: %d\n", new_nice);
+
+    return 0;
 };
