@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 int main() {
-    int increment = 5;
+    int increment = -3;
 
     int current_nice = nice(0);
     printf("Current nice: %d\n", current_nice);
