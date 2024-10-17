@@ -3,8 +3,7 @@
 
 int main() {
     printf("%d\n", getpid());
-    printf("%d\n", getuid());
-    printf("%d\n", geteuid());
-    printf("%d\n", getgid());
-    printf("%d\n", getegid());
+    printf("%d\n", getpgid(1));
+    setpgid(1, 0);
+    printf("%d\n", getpgid(1));
 };
