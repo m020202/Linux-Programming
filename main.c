@@ -1,19 +1,17 @@
-#include <unistd.h>
 #include <stdio.h>
+#include <fcntl.h>
 
 int main() {
-    int increment = -3;
+    int fd;
 
-    int current_nice = nice(0);
-    printf("Current nice: %d\n", current_nice);
+    fd = open("data", O_WRONLY | O_CREAT, 0644);
+    printf("%d\n", fd);
 
-    if (nice(increment) == -1) {
-        perror("nice: ");
-        return 1;
-    }
+    fd = open("data", O_WRONLY | O_CREAT | O_EXCL, 0644);
+    printf("%d\n", fd);
 
-    int new_nice = nice(0);
-    printf("New nice value: %d\n", new_nice);
+    fd = open("data", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    printf("%d\n", fd);
 
     return 0;
 };
