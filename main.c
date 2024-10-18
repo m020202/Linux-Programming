@@ -2,11 +2,10 @@
 
 int main() {
     FILE *file;
+    file = fopen("data", "a");
 
-    if ((file = fopen("data","r")) == NULL) {
-        printf("Couldn't open file!\n");
-        return -1;
-    }
+    putc('a', file);
+    putc('b', file);
 
     return 0;
 };
