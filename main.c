@@ -1,16 +1,15 @@
 #include <stdio.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/fcntl.h>
 
 int main() {
-    FILE *file;
-    file = fopen("data", "w");
-    if (file == NULL) {
-        perror("파일 열기 실패: ");
-        return -1;
-    }
-
-    int age = 25;
-    const char *name = "J";
-    fprintf(file, "이름: %s\n나이: %d", name, age);
+    int fd;
+    fd = open("data2", O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    umask(022);
+    struct stat file_stat;
+    stat("data2", &file_stat);
+    printf("new author: %03o\n", file_stat.st_mode & 0777);
 
     return 0;
 };
