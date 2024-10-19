@@ -3,29 +3,18 @@
 #include <sys/stat.h>
 #include <sys/fcntl.h>
 #include <dirent.h>
+#include <sys/mount.h>
+#include <sys/statvfs.h>
 
-int my_double_ls(const char *name) {
-    struct dirent *d;
-    DIR *dp;
-
-    if ((dp = opendir("hello")) == NULL)
-        return -1;
-    while ((d = readdir(dp)) != NULL) {
-        if (d->d_ino != 0)
-            printf("%s\n", d->d_name);
-    }
-
-    rewinddir(dp);
-
-    while ((d = readdir(dp))) {
-        if (d->d_ino != 0)
-            printf("%s\n", d->d_name);
-    }
-    closedir(dp);
-    return 0;
-}
 
 int main() {
-    my_double_ls("hello");
+    struct statvfs buf;
+
+    struct stat stat1;
+
+    printf("%d\n", statvfs("data2", &buf));
+
+    printf("%d\n", stat("data2", &stat1));
+
     return 0;
 };
