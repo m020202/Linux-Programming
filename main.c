@@ -12,9 +12,11 @@ int main() {
 
     struct stat stat1;
 
-    printf("%d\n", statvfs("data2", &buf));
+    int fd = open("data2", O_RDONLY);
 
-    printf("%d\n", stat("data2", &stat1));
+    printf("%d\n", fstatvfs(fd, &buf));
+
+    printf("%d\n", fstat(fd, &stat1));
 
     return 0;
 };
