@@ -8,15 +8,13 @@
 
 
 int main() {
-    struct statvfs buf;
+    struct dirent dir;
 
-    struct stat stat1;
+    DIR *ptr;
 
-    int fd = open("data2", O_RDONLY);
+    ptr = opendir("fortest");
 
-    printf("%d\n", fstatvfs(fd, &buf));
-
-    printf("%d\n", lstat("data2", &stat1));
+    readdir(ptr);
 
     return 0;
 };
