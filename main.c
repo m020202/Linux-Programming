@@ -16,7 +16,7 @@ int main() {
 
     printf("%d\n", fstatvfs(fd, &buf));
 
-    printf("%d\n", fstat(fd, &stat1));
+    printf("%d\n", lstat("data2", &stat1));
 
     return 0;
 };
