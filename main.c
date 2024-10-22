@@ -6,11 +6,14 @@
 #include <sys/mount.h>
 #include <sys/statvfs.h>
 #include <stdlib.h>
+#include <ulimit.h>
 
 
 int main() {
-    printf("%d", getpgrp());
-    printf("%d", getpgid(1));
+    char *buf[512];
+    symlink("data", "data3");
+    printf("%d", readlink("data3", buf, 512));
 
+    printf("%s", buf);
     return 0;
 };
