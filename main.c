@@ -7,15 +7,10 @@
 #include <sys/statvfs.h>
 #include <stdlib.h>
 
-void printf1() {
-    printf("printfunc\n");
-}
-
 
 int main() {
-    printf("%d", atexit(printf1));
-
-    execl("/bin/ls", "ls", "-l", (char *) NULL);
+    printf("%d", getpgrp());
+    printf("%d", getpgid(1));
 
     return 0;
 };
