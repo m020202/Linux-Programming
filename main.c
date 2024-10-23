@@ -10,10 +10,13 @@
 
 
 int main() {
-    char *buf[512];
-    symlink("data", "data3");
-    printf("%d", readlink("data3", buf, 512));
+    int fd;
+    ssize_t nread;
+    char buf[512];
 
-    printf("%s", buf);
-    return 0;
+    fd = open("data", O_RDONLY);
+    nread = read(fd, buf, 512);
+    printf("%d", nread);
+
+    close(fd);
 };
