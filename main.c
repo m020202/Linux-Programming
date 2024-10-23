@@ -8,40 +8,12 @@
 #include <stdlib.h>
 #include <ulimit.h>
 
-int fileStatus(int fd) {
-    int arg1;
-
-    if ((arg1 = fcntl(fd, F_GETFL)) == -1) {
-        printf("file status failed\n");
-        return -1;
-    }
-
-    switch (arg1 & O_ACCMODE) {
-        case O_WRONLY:
-            printf("WR");
-            break;
-        case O_RDONLY:
-            printf("RD");
-            break;
-        case O_RDWR:
-            printf("RDWR");
-            break;
-        default:
-            printf("NO such mode");
-    }
-
-    if (arg1 & O_APPEND) {
-        printf("-append flag set");
-    }
-}
-
-
-
-
 int main() {
-    int fd = open("data.txt", O_RDWR);
+    ssize_t nread;
+    char buf[512];
 
-    fileStatus(fd);
+    while ((nread = read(0,buf, 512)) > 0)
+        write(1, buf, nread);
 
-    close(fd);
+    exit(0);
 };
