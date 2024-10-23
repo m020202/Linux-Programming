@@ -6,15 +6,22 @@
 #include <sys/mount.h>
 #include <sys/statvfs.h>
 #include <stdlib.h>
-#include <ulimit.h>
 
-int main() {
-    char *filename = "data.txt";
-    if (access(filename, R_OK) == -1){
-        fprintf(stderr, "User cannot read file %s\n", filename);
+int main(int argc, char **argv) {
+    if (argc != 3)
+        fprintf(stderr, "usage: move file1 file2\n");
+
+    if (link(argv[1], argv[2]) == -1){
+        perror("link failed");
         exit(1);
     }
 
-    printf("%s readable, proceeding\n", filename);
+    if (unlink(argv[1]) == -1) {
+        perror("unlink failed");
+        unlink(argv[2]);
+        exit(1);
+    }
+
+    printf("Succeeded\n");
 
 };
