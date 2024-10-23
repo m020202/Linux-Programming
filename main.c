@@ -9,11 +9,10 @@
 #include <ulimit.h>
 
 int main() {
-    ssize_t nread;
-    char buf[512];
+    FILE *file;
 
-    while ((nread = read(0,buf, 512)) > 0)
-        write(1, buf, nread);
+    if (fopen("data.txt", "rb") != NULL)
+        printf("YES");
 
     exit(0);
 };
