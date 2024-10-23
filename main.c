@@ -7,40 +7,44 @@
 #include <sys/statvfs.h>
 #include <stdlib.h>
 
-static short octarray[9] = {
-        0400, 0200, 0100,
-        0040, 0020, 0010,
-        0004, 0002, 0001
-};
+#define MFILE 10
 
-static char perms[10] = "rwxrwxrwx";
+void cmp(const char *, time_t);
+struct stat sb;
 
-int fileData(const char *path) {
-    struct stat buf;
+int main(int argc, char **argv) {
     int i;
-    char descrip[10];
+    time_t last_time[MFILE + 1]; // 각 파일의 최근 수정 시간 기록
 
-    if (stat(path, &buf) == -1) {
-        fprintf(stderr, "Couldn't stat %s\n", path);
-        return -1;
+    if (argc < 2) {
+        fprintf(stderr, "usage: lookout filename ... \n");
+        exit(1);
     }
 
-    for (i = 0; i < 9; ++i) {
-        if (buf.st_mode & octarray[i])
-            descrip[i] = perms[i];
-        else
-            descrip[i] = '-';
+    if (--argc > MFILE){
+        fprintf(stderr, "lookout: too many filenames\n");
+        exit(1);
     }
-    descrip[9] = '\0';
 
-    printf("\nFile %s :\n", path);
-    printf("Size %ld bytes\n", buf.st_size);
-    printf("User-id %d, Group-id %d\n\n", buf.st_uid, buf.st_gid);
-    printf("Permissions: %s\n", descrip);
+    for (i = 1; i < argc; ++i) {
+        if (stat(argv[i], &sb) == -1) {
+            fprintf(stderr, "lookout: couldn't stat %s\n", argv[i]);
+            exit(1);
+        }
+        last_time[i] = sb.st_mtime;
+    }
 
-    return 0;
+    while (1) {
+        for (i = 1; i < argc; ++i) {
+            cmp(argv[i], last_time[i]);
+        }
+        sleep(60);
+    }
 }
 
-int main() {
-    fileData("data.txt");
-};
+void cmp(const char *path, time_t last) {
+    if (stat(path, &sb) == -1 || sb.st_mtime != last) {
+        fprintf(stderr, "lookout: %s changed\n", path);
+        exit(0);
+    }
+}
