@@ -8,31 +8,13 @@
 #include <stdlib.h>
 #include <ulimit.h>
 
-int specialCreat(const char *path, mode_t mode) {
-    mode_t oldU;
-    int fd;
-
-    if ((oldU = umask(0)) == -1) {
-        perror("saving old mask: ");
-        return -1;
-    }
-
-    if ((fd = open(path, O_WRONLY | O_CREAT | O_EXCL, mode)) == -1)
-        perror("opening file");
-
-    int num = umask(oldU);
-    if (num == -1) {
-        perror("resotring old mask");
-    }
-    else if (num == 0){
-        printf("SUCCESS");
-    }
-
-    return fd;
-}
-
 int main() {
-    specialCreat("data2.txt", 0666);
+    char *filename = "data.txt";
+    if (access(filename, R_OK) == -1){
+        fprintf(stderr, "User cannot read file %s\n", filename);
+        exit(1);
+    }
 
-    exit(0);
+    printf("%s readable, proceeding\n", filename);
+
 };
