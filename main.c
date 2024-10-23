@@ -11,9 +11,9 @@
 
 int main() {
     int fd = open("data.txt", O_RDWR);
-    lseek(fd, 2, SEEK_END);
+    int newFd = fcntl(fd, F_DUPFD);
 
-    write(fd,  " world", 6);
+    printf("%d", newFd);
 
     close(fd);
 };
