@@ -63,7 +63,7 @@ int main() {
                         descrip[i] = '-';
                 }
 
-                printf("%-10s %-10d %-10s\n", descrip, sb.st_size, d->d_name);
+                printf("%-10s %-10lld %-10s\n", descrip, sb.st_size, d->d_name);
             }
                 // 해당 항목이 디렉토리면
             else if (S_ISDIR(sb.st_mode)) {
