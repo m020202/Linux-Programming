@@ -23,5 +23,6 @@ int main() {
         exit_status = WEXITSTATUS(status);
         printf("Exit status from %d was %d\n", ret_pid, exit_status);
     }
+
     exit(0);
 }

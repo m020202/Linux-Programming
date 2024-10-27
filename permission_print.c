@@ -16,8 +16,7 @@ int list(const char *name, const struct stat *status, int type) {
 }
 
 int main(int argc, char **argv) {
-    int list(const char *, const struct stat *, int);
-
+    int list(const char *, const struct stat *, int type);
     if (argc == 1)
         ftw(".", list, 1);
     else
