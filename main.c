@@ -7,68 +7,64 @@
 
 #define MSGSIZE 6
 
-int parent(int *);
-int child(int *);
-
 char *msg1 = "hello";
 char *msg2 = "bye!!";
 
-int main() {
-    int p[2];
-    if (pipe(p) == -1) {
-        perror("pipe call");
-        return 0;
-    }
-    if (fcntl(p[0], F_SETFL, O_NONBLOCK) == -1) {
-        perror("fcntl call");
-        return 0;
+int child(int[]);
+void parent(int p[3][2]) {
+    char buf[MSGSIZE], ch;
+    fd_set set, master;
+    for (int i = 0; i < 3; ++i) close(p[i][1]);
+    FD_SET(0, &master);
+    for (int i = 0; i < 3; ++i) {
+        FD_SET(p[i][0], &master);
     }
 
-    switch (fork()) {
-        case -1:
-            perror("fork call");
-            exit(1);
-        case 0:
-            child(p);
-        default:
-            parent(p);
+    while (set = master, select(p[2][1]+1, &set, NULL, NULL, NULL) > 0) {
+        if (FD_ISSET(0, &set)) {
+            printf("From standard input ...");
+            read(0, &ch, 1);
+            printf("%c\n", ch);
+        }
+        for (int i = 0; i < 3; ++i) {
+            if (FD_ISSET(p[i][0], &set)) {
+                if (read(p[i][0], buf, MSGSIZE) > 0) {
+                    printf("Message from child%d\n", i);
+                    printf("MSG=%s\n", buf);
+                }
+            }
+        }
+        if (waitpid(-1, NULL, WNOHANG) == -1) return;
     }
-    return 0;
+}
+
+void fatal(char *buf) {
+    printf("%s\n", buf);
+    exit(1);
+}
+
+int main() {
+    int pip[3][2];
+    for (int i = 0; i < 3; ++i) {
+        if (pipe(pip[i]) == -1)
+            fatal("pipe call");
+        switch (fork()) {
+            case -1:
+                fatal("fork call");
+            case 0:
+                child(pip[i]);
+        }
+    }
+    parent(pip);
 }
 
 int child(int p[2]) {
-    int count;
     close(p[0]);
-    for (count = 0; count < 3; count++) {
+
+    for (int count = 0; count < 2; ++count) {
         write(p[1], msg1, MSGSIZE);
-        sleep(3);
+        sleep(getpid() % 4);
     }
     write(p[1], msg2, MSGSIZE);
     exit(0);
-}
-
-int parent(int p[2]) {
-    int nread;
-    char buf[MSGSIZE];
-    close(p[1]);
-
-    for(;;) {
-        switch (nread = read(p[0], buf, MSGSIZE)) {
-            case -1:
-                if (errno == EAGAIN) {
-                    printf("(pipe empty)\n");
-                    sleep(1);
-                    break;
-                }
-                else {
-                    perror("read call");
-                    exit(1);
-                }
-            case 0:
-                printf("End of conversation\n");
-                exit(0);
-            default:
-                printf("MSG=%s\n", buf);
-        }
-    }
 }
