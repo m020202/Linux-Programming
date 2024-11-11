@@ -97,6 +97,7 @@ int main() {
             }
         }
         closedir(dp);
+        printf("\n");
     }
     return 0;
 }

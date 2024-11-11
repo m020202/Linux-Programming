@@ -1,40 +1,31 @@
 #include <stdio.h>
 #include <signal.h>
 #include <unistd.h>
-void sig_action(int sig, siginfo_t *siginfo, void* param2) {
-    printf("%d receive sig_num:%d from %d\n", getpid(), sig, siginfo->si_pid);
-}
+#include <stdlib.h>
+
+#define MSGSIZE 16
+
+char *msg1 = "hello world #1";
+char *msg2 = "hello world #2";
+char *msg3 = "hello world #3";
 
 int main() {
-    int pid;
+    char inBuf[MSGSIZE];
+    int p[2];
+    pid_t pid;
 
-    struct sigaction p_act, c_act;
-    p_act.sa_sigaction = sig_action;
-    p_act.sa_flags = SA_SIGINFO;
-    sigaction(SIGUSR1, &p_act, 0);
-
-    if ((pid = fork()) == -1) {
-        perror("fork error: ");
-        return -1;
+    if (pipe(p) == -1) {
+        perror("pipe call: ");
+        exit(1);
     }
 
-    if (pid > 0) {
-        for (int i = 0; i < 10; ++i) {
-            pause();
-            sleep(1);
-            kill(pid, SIGUSR1);
-        }
-    }
-    else {
-        c_act.sa_sigaction = sig_action;
-        c_act.sa_flags = SA_SIGINFO;
-        sigaction(SIGUSR1, &c_act, 0);
+    write(p[1], msg1, MSGSIZE);
+    write(p[1], msg2, MSGSIZE);
+    write(p[1], msg3, MSGSIZE);
 
-        for (int i = 0; i < 10; ++i) {
-            kill(getppid(), SIGUSR1);
-            pause();
-            sleep(1);
-        }
+    for (int i = 0; i < 3; ++i) {
+        read(p[0], inBuf, MSGSIZE);
+        printf("%s\n", inBuf);
     }
 
     return 0;
