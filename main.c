@@ -6,23 +6,31 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
 
-#define MSGSIZE 63
-char *fifo = "fifo";
+#define MSGSZ 128
+
+struct msgbuf{
+    long mtype;
+    char mtext[MSGSZ];
+};
+
 int main(int argc, char **argv) {
-    int fd;
-    char msgBuf[MSGSIZE + 1];
+    key_t key = ftok("test", 65);
+    int msqid = msgget(key, 0666 | IPC_CREAT);
 
-    if (mkfifo(fifo, 0644) == -1) {
-        if (errno != EEXIST) return -1;
-    }
+    struct msgbuf message;
 
-    if ((fd = open(fifo, O_RDWR)) < 0)
-        return -1;
+    message.mtype = 1;
+    strcpy(message.mtext, "Hello World!");
+    msgsnd(msqid, &message, sizeof(message.mtext), 0);
+    printf("Message sent: %s \n", message.mtext);
 
-    for (;;) {
-        if (read(fd, msgBuf, MSGSIZE + 1) < 0)
-            return -1;
-        printf("message received %s\n", msgBuf);
-    }
+    msgrcv(msqid, &message, sizeof(message.mtext), 1, 0);
+    printf("Message received: %s\n", message.mtext);
+
+    msgctl(msqid, IPC_RMID, NULL);
+
+    return 0;
 }
