@@ -9,20 +9,16 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 
-void catchInt(int signo) {
-    printf("\nCATCHINT: signo=%d\n", signo);
-
-    printf("CATCHINT: returning\n\n");
+void g_exit(int s) {
+    unlink("test");
+    fprintf(stderr, "\nInterrupted - exiting\n");
 }
 
 int main() {
-    static struct sigaction act, oact;
+    static struct sigaction act;
 
-    act.sa_handler = SIG_IGN;
-    sigaction(SIGINT, &act, &oact);
-    sigaction(SIGINT, &oact, NULL);
+    act.sa_handler = g_exit;
+    sigaction(SIGINT, &act, NULL);
 
-    printf("hello world\n");
-    sleep(10);
-    return 0;
+    sleep(5);
 }
