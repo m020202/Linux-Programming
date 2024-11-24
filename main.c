@@ -9,16 +9,34 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 
-void g_exit(int s) {
-    unlink("test");
-    fprintf(stderr, "\nInterrupted - exiting\n");
+void sig_handler(int sig, siginfo_t *siginfo, void* param2) {
+    printf("[Parent: %d]: receive a signal from child %d\n\n", getpid(), siginfo->si_pid);
 }
 
+
 int main() {
+    pid_t pid;
     static struct sigaction act;
+    act.sa_sigaction = sig_handler;
+    act.sa_flags = SA_SIGINFO;
+    sigfillset(&act.sa_mask);
+    sigaction(SIGUSR1, &act, NULL);
 
-    act.sa_handler = g_exit;
-    sigaction(SIGINT, &act, NULL);
+    int i = 0;
+    while((pid = fork())) {
+        printf("[Parent: %d]: create child %d\n", getpid(), pid);
+        sleep(3);
+        if (i++ == 3)
+            break;
+    }
 
-    sleep(5);
+    if (pid > 0) {
+//        getchar();
+    }
+    else {
+        sleep(2);
+        kill(getppid(), SIGUSR1);  // 자식은 부모에게 SIGUSR1 신호를 보냄
+    }
+
+    return 0;
 }
