@@ -9,28 +9,27 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 
-#define MSGSZ 128
+void catchInt(int signo) {
+    printf("\nCATCHINT: signo=%d\n", signo);
 
-struct msgbuf{
-    long mtype;
-    char mtext[MSGSZ];
-};
+    printf("CATCHINT: returning\n\n");
+}
 
-int main(int argc, char **argv) {
-    key_t key = ftok("test", 65);
-    int msqid = msgget(key, 0666 | IPC_CREAT);
+int main() {
+    static struct sigaction act;
+    act.sa_handler = catchInt;
+    sigemptyset(&(act.sa_mask));
+    sigaction(SIGINT, &act, NULL);
 
-    struct msgbuf message;
+    printf("sleep call #1\n");
+    sleep(10);
+    printf("sleep call #2\n");
+    sleep(10);
+    printf("sleep call #3\n");
+    sleep(10);
+    printf("sleep call #4\n");
+    sleep(10);
 
-    message.mtype = 1;
-    strcpy(message.mtext, "Hello World!");
-    msgsnd(msqid, &message, sizeof(message.mtext), 0);
-    printf("Message sent: %s \n", message.mtext);
-
-    msgrcv(msqid, &message, sizeof(message.mtext), 1, 0);
-    printf("Message received: %s\n", message.mtext);
-
-    msgctl(msqid, IPC_RMID, NULL);
-
+    printf("Exiting\n");
     return 0;
 }
