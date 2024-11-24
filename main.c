@@ -16,20 +16,13 @@ void catchInt(int signo) {
 }
 
 int main() {
-    static struct sigaction act;
-    act.sa_handler = catchInt;
-    sigemptyset(&(act.sa_mask));
-    sigaction(SIGINT, &act, NULL);
+    static struct sigaction act, oact;
 
-    printf("sleep call #1\n");
-    sleep(10);
-    printf("sleep call #2\n");
-    sleep(10);
-    printf("sleep call #3\n");
-    sleep(10);
-    printf("sleep call #4\n");
-    sleep(10);
+    act.sa_handler = SIG_IGN;
+    sigaction(SIGINT, &act, &oact);
+    sigaction(SIGINT, &oact, NULL);
 
-    printf("Exiting\n");
+    printf("hello world\n");
+    sleep(10);
     return 0;
 }
