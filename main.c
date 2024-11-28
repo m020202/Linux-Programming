@@ -17,18 +17,16 @@ void goBack() {
 
 int main ()
 {
-    static struct sigaction act;
-    printf("1\n");
-    int result = sigsetjmp(position, 1);
-    if (result == 0) {
-        act.sa_handler = goBack;
-        sigaction(SIGINT, &act, NULL);
-        sleep(5);
-    }
-    else if (result == 1) {
-        printf("3\n");
-    }
+    sigset_t set1, set2;
 
-    printf("2");
+    sigfillset(&set1);
+    sigfillset(&set2);
+    sigdelset(&set2, SIGINT);
+
+    sigprocmask(SIG_SETMASK, &set1, NULL);
+    sigprocmask(SIG_UNBLOCK, &set2, NULL);
+    sigprocmask(SIG_UNBLOCK, &set1, NULL);
+    sleep(5);
+
 
 }
