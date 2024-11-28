@@ -8,9 +8,10 @@
 #include <fcntl.h>
 
 int count;
+int time_out;
 void alarm_action(int sig) {
-    printf("wrtie blocked after %d characters\n", count);
-    exit(0);
+    printf("\nwrite blocked after %d characters\n", count);
+    time_out = 1;
 }
 
 int main() {
@@ -33,9 +34,12 @@ int main() {
     sigaction(SIGALRM, &act, NULL);
 
     while (1) {
-        alarm(5);
+        time_out = 0;
+        alarm(3);
         write(p[1], &c, 1);
         alarm(0);
+        if (time_out)
+            break;
         if ((++count % 1024) == 0)
             printf("%d characters in pipe\n", count);
     }
