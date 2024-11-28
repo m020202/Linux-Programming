@@ -28,11 +28,13 @@ int main() {
             perror("fork call: ");
             exit(1);
         case 0:
+            close(p[0]);
             write(p[1], msg1, MSGSIZE);
             write(p[1], msg2, MSGSIZE);
             write(p[1], msg3, MSGSIZE);
             break;
         default:
+            close(p[1]);
             for(int i =0; i < 3; ++i) {
                 read(p[0], inBuf, MSGSIZE);
                 printf("%s\n", inBuf);
