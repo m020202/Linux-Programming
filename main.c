@@ -10,59 +10,58 @@
 #define MSGSIZE 6
 
 char *msg1 = "hello";
-char *msg2 = "bye";
+char *msg2 = "bye!!";
+
+void parent(int p[3][2]) {
+    char buf[MSGSIZE], ch;
+    fd_set set, master;
+    for (int i = 0; i < 3; ++i) close(p[i][1]); // 읽기만 하겠다.
+    FD_ZERO(&master);
+    FD_SET(0, &master);
+    for (int i = 0; i < 3; ++i)
+        FD_SET(p[i][0], &master);
+
+    while(set = master, select(p[2][0] + 1, &set, NULL, NULL, NULL) > 0) {
+        if (FD_ISSET(0, &set)) {
+            printf("From standarad input...");
+            read(0, &ch, 1);
+            printf("%c\n", ch);
+        }
+        for (int i = 0; i < 3; ++i) {
+            if (FD_ISSET(p[i][0], &set)) {
+                if (read(p[i][0], buf, MSGSIZE) > 0) {
+                    printf("Message from child %d\n", i);
+                    printf("MSG = %s\n", buf);
+                }
+            }
+        }
+        if (waitpid(-1, NULL, WNOHANG) == -1) return;
+    }
+}
 
 int child(int p[2]) {
-    int cnt;
     close(p[0]);
-    for (cnt = 0; cnt < 3; ++cnt) {
+    for (int i = 0; i < 2; ++i) {
         write(p[1], msg1, MSGSIZE);
-        sleep(3);
+        sleep(getpid() % 4);
     }
 
     write(p[1], msg2, MSGSIZE);
-    exit(0);
-}
-
-int parent(int p[2]) {
-    int nread;
-    char buf[MSGSIZE];
-    close(p[1]);
-    for(;;) {
-        switch (nread = read(p[0], buf, MSGSIZE)) {
-            case -1:
-                if (errno == EAGAIN) {
-                    printf("(pipe empty)\n");
-                    sleep(1);
-                    break;
-                }
-                else {
-                    perror("read call: ");
-                    exit(1);
-                }
-            case 0:
-                printf("End of Conversation\n");
-                exit(0);
-            default:
-                printf("MSG=%s\n", buf);
-        }
-    }
+    exit(1);
 }
 
 int main() {
-    int p[2];
-    if (pipe(p) == -1)
-        exit(0);
-    if (fcntl(p[0], F_SETFL, O_NONBLOCK) == -1)
-        exit(1);
-
-    switch (fork()) {
-        case -1:
+    int p[3][2];
+    for (int i = 0; i < 3; ++i) {
+        if (pipe(p[i]) == -1)
             exit(1);
-        case 0:
-            child(p);
-        default:
-            parent(p);
+        switch (fork()) {
+            case -1:
+                exit(1);
+            case 0:
+                child(p[i]);
+        }
     }
-    return 0;
+    parent(p);
+    exit(0);
 }
