@@ -7,18 +7,28 @@
 #include <errno.h>
 #include <fcntl.h>
 
-void handler(int sig){
-    printf("Received signal %d\n", sig);
+
+static int time_out;
+static char answer[11];
+
+void catch (int sig) {
+    time_out = 1;
+
 }
 
 int main() {
     static struct sigaction act;
-    act.sa_handler = handler;
-    sigaction(SIGINT, &act, NULL);
+    act.sa_handler = catch;
+    sigaction(SIGALRM, &act, NULL);
 
-    printf("Sending SIGINT to myself...\n");
+    for (int i = 0; i < 5; ++i) {
+        time_out = 0;
+        alarm(5);
+        scanf("%s", answer);
+        alarm(0);
+        if (!time_out) break;
+    }
 
-    raise(SIGINT);
-
+    printf("%s", answer);
     return 0;
 }
