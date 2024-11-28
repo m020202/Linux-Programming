@@ -15,7 +15,7 @@ char *msg3 = "hello world #3";
 
 int main() {
     char inBuf[MSGSIZE];
-    int p[2], i;
+    int p[2];
     pid_t pid;
 
     if (pipe(p) == -1) {
@@ -23,13 +23,21 @@ int main() {
         exit(1);
     }
 
-    write(p[1], msg1, MSGSIZE+1);
-    write(p[1], msg2, MSGSIZE+1);
-    write(p[1], msg3, MSGSIZE+1);
-
-    for (i = 0; i < 3; ++i) {
-        read(p[0], inBuf, MSGSIZE+1);
-        printf("%s\n", inBuf);
+    switch (pid = fork()) {
+        case -1:
+            perror("fork call: ");
+            exit(1);
+        case 0:
+            write(p[1], msg1, MSGSIZE);
+            write(p[1], msg2, MSGSIZE);
+            write(p[1], msg3, MSGSIZE);
+            break;
+        default:
+            for(int i =0; i < 3; ++i) {
+                read(p[0], inBuf, MSGSIZE);
+                printf("%s\n", inBuf);
+            }
+            wait(NULL);
     }
 
     return 0;
