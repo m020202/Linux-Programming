@@ -6,44 +6,19 @@
 #include <signal.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <setjmp.h>
 
-int n_times = 0;
-void p_action(int sig) {
-    printf("Parent caught signal #%d\n", ++n_times);
-}
-void c_action(int sig) {
-    printf("Child caught signal #%d\n", ++n_times);
+void handler(int sig){
+    printf("Received signal %d\n", sig);
 }
 
-int main ()
-{
-    pid_t pid, ppid;
-    static struct sigaction pact, cact;
+int main() {
+    static struct sigaction act;
+    act.sa_handler = handler;
+    sigaction(SIGINT, &act, NULL);
 
-    pact.sa_handler = p_action;
-    sigaction(SIGUSR1, &pact, NULL);
+    printf("Sending SIGINT to myself...\n");
 
-    switch (pid = fork()) {
-        case -1:
-            perror("synchro");
-            exit(1);
-        case 0:
-            cact.sa_handler = c_action;
-            sigaction(SIGUSR1, &cact, NULL);
+    raise(SIGINT);
 
-            ppid = getppid();
-            for (;;) {
-                sleep(1);
-                kill(ppid, SIGUSR1);
-                pause();
-            }
-        default:
-            for(;;) {
-                pause();
-                sleep(1);
-                kill(pid, SIGUSR1);
-            }
-    }
-
+    return 0;
 }
