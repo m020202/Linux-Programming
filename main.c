@@ -7,32 +7,30 @@
 #include <errno.h>
 #include <fcntl.h>
 
-void sig_handler(int sig, siginfo_t *siginfo, void  *flag){
-    printf("[%d] send me %d\n", siginfo->si_pid, sig);
-}
+#define MSGSIZE 16
+
+char *msg1 = "hello world #1";
+char *msg2 = "hello world #2";
+char *msg3 = "hello world #3";
 
 int main() {
-    pid_t pid, ppid;
-    static struct sigaction act;
-    act.sa_sigaction = sig_handler;
-    sigaction(SIGUSR1, &act, NULL);
+    char inBuf[MSGSIZE];
+    int p[2], i;
+    pid_t pid;
 
-    switch (pid = fork()) {
-        case -1:
-            perror("fork error: ");
-            exit(1);
-        case 0:
-            ppid = getppid();
-            for (int i = 0; i < 10; ++i) {
-                sleep(1);
-                kill(ppid, SIGUSR1);
-                pause();
-            }
-        default:
-            for (int i = 0; i < 10; ++i) {
-                pause();
-                sleep(1);
-                kill(pid, SIGUSR1);
-            }
+    if (pipe(p) == -1) {
+        perror("pipe call: ");
+        exit(1);
     }
+
+    write(p[1], msg1, MSGSIZE+1);
+    write(p[1], msg2, MSGSIZE+1);
+    write(p[1], msg3, MSGSIZE+1);
+
+    for (i = 0; i < 3; ++i) {
+        read(p[0], inBuf, MSGSIZE+1);
+        printf("%s\n", inBuf);
+    }
+
+    return 0;
 }
