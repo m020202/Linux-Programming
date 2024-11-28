@@ -11,24 +11,30 @@
 static int time_out;
 static char answer[11];
 
-void catch (int sig) {
-    time_out = 1;
+void sig_handler (int sig) {
+    if (sig == SIGINT)
+        printf("\nDon't Ctrl+C !!\n");
+    else if (sig == SIGALRM) {
+        printf("시간 초과\n");
+        time_out = 1;
+    }
 
 }
 
 int main() {
     static struct sigaction act;
-    act.sa_handler = catch;
+    act.sa_handler = sig_handler;
+    sigaction(SIGINT, &act, NULL);
     sigaction(SIGALRM, &act, NULL);
 
-    for (int i = 0; i < 5; ++i) {
-        time_out = 0;
-        alarm(5);
-        scanf("%s", answer);
-        alarm(0);
-        if (!time_out) break;
+    time_out = 0;
+    alarm(2);
+
+    while (!time_out) {
+        pause();
     }
 
-    printf("%s", answer);
+    sleep(5);
+    printf("완료됨");
     return 0;
 }
