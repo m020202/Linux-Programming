@@ -8,25 +8,42 @@
 #include <fcntl.h>
 #include <setjmp.h>
 
-sigjmp_buf position;
-
-void goBack() {
-    fprintf(stderr, "\nInterrupted\n");
-    siglongjmp(position, 1);
+int n_times = 0;
+void p_action(int sig) {
+    printf("Parent caught signal #%d\n", ++n_times);
+}
+void c_action(int sig) {
+    printf("Child caught signal #%d\n", ++n_times);
 }
 
 int main ()
 {
-    sigset_t set1, set2;
+    pid_t pid, ppid;
+    static struct sigaction pact, cact;
 
-    sigfillset(&set1);
-    sigfillset(&set2);
-    sigdelset(&set2, SIGINT);
+    pact.sa_handler = p_action;
+    sigaction(SIGUSR1, &pact, NULL);
 
-    sigprocmask(SIG_SETMASK, &set1, NULL);
-    sigprocmask(SIG_UNBLOCK, &set2, NULL);
-    sigprocmask(SIG_UNBLOCK, &set1, NULL);
-    sleep(5);
+    switch (pid = fork()) {
+        case -1:
+            perror("synchro");
+            exit(1);
+        case 0:
+            cact.sa_handler = c_action;
+            sigaction(SIGUSR1, &cact, NULL);
 
+            ppid = getppid();
+            for (;;) {
+                sleep(1);
+                kill(ppid, SIGUSR1);
+                pause();
+            }
+        default:
+            for(;;) {
+                pause();
+                sleep(1);
+                kill(pid, SIGUSR1);
+            }
+    }
 
 }
