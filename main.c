@@ -7,34 +7,32 @@
 #include <errno.h>
 #include <fcntl.h>
 
-
-static int time_out;
-static char answer[11];
-
-void sig_handler (int sig) {
-    if (sig == SIGINT)
-        printf("\nDon't Ctrl+C !!\n");
-    else if (sig == SIGALRM) {
-        printf("시간 초과\n");
-        time_out = 1;
-    }
-
+void sig_handler(int sig, siginfo_t *siginfo, void  *flag){
+    printf("[%d] send me %d\n", siginfo->si_pid, sig);
 }
 
 int main() {
+    pid_t pid, ppid;
     static struct sigaction act;
-    act.sa_handler = sig_handler;
-    sigaction(SIGINT, &act, NULL);
-    sigaction(SIGALRM, &act, NULL);
+    act.sa_sigaction = sig_handler;
+    sigaction(SIGUSR1, &act, NULL);
 
-    time_out = 0;
-    alarm(2);
-
-    while (!time_out) {
-        pause();
+    switch (pid = fork()) {
+        case -1:
+            perror("fork error: ");
+            exit(1);
+        case 0:
+            ppid = getppid();
+            for (int i = 0; i < 10; ++i) {
+                sleep(1);
+                kill(ppid, SIGUSR1);
+                pause();
+            }
+        default:
+            for (int i = 0; i < 10; ++i) {
+                pause();
+                sleep(1);
+                kill(pid, SIGUSR1);
+            }
     }
-
-    sleep(5);
-    printf("완료됨");
-    return 0;
 }
