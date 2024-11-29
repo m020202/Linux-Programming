@@ -6,44 +6,32 @@
 #include <signal.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+#include <time.h>
 
-int join(char *com1[], char *com2[]) {
-    int p[2], status;
-    switch (fork()) {
-        case -1:
-            exit(1);
-        case 0:
-            break;
-        default:
-            wait(&status);
-            return status;
+int main(int argc, char **argv) {
+    key_t mkey;
+    int msq_id;
+    struct msqid_ds msq_status;
+
+    if (argc != 2) {
+        perror("usage: show msg keyval\n");
+        exit(1);
+    }
+    mkey = (key_t) argv[1];
+    if ((msq_id = msgget(mkey, 0)) == -1) {
+        perror("msgget failed");
+        exit(2);
     }
 
-    if (pipe(p) == -1)
-        exit(0);
-
-    switch (fork()) {
-        case -1:
-            exit(1);
-        case 0:
-            dup2(p[1], 1);
-            close(p[0]);
-            close(p[1]);
-            execvp(com1[0], com1);
-        default:
-            dup2(p[0], 0);
-            close(p[0]);
-            close(p[1]);
-            execvp(com2[0], com2);
+    if (msgctl(msq_id, IPC_STAT, &msq_status) == -1) {
+        perror("msgctl failed");
+        exit(3);
     }
-}
 
-int main() {
-    char *one[4] = {"ls", "-l", "/usr/lib", NULL};
-    char *two[3] = {"grep", "^d", NULL};
-    int ret;
-
-    ret = join(one, two);
-    printf("join returned %d\n", ret);
+    printf("%d", mkey);
+    printf("%ld message(s) on queue", msq_status.msg_qnum);
+    printf("%s", ctime(&msq_status.msg_stime));
     return 0;
 }
