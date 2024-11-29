@@ -7,31 +7,23 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/ipc.h>
-#include <sys/msg.h>
+#include <sys/sem.h>
 #include <time.h>
 
 int main(int argc, char **argv) {
-    key_t mkey;
-    int msq_id;
-    struct msqid_ds msq_status;
+    key_t skey;
+    int semid;
 
-    if (argc != 2) {
-        perror("usage: show msg keyval\n");
+    if ((skey = ftok(argv[1], atoi(argv[2]))) == (key_t) -1) {
+        perror("ftok error");
         exit(1);
     }
-    mkey = (key_t) argv[1];
-    if ((msq_id = msgget(mkey, 0)) == -1) {
-        perror("msgget failed");
-        exit(2);
+
+    if ((semid = semget(skey, 2, 0660 | IPC_CREAT)) == -1) {
+        perror("semget error");
+        exit(1);
     }
 
-    if (msgctl(msq_id, IPC_STAT, &msq_status) == -1) {
-        perror("msgctl failed");
-        exit(3);
-    }
-
-    printf("%d", mkey);
-    printf("%ld message(s) on queue", msq_status.msg_qnum);
-    printf("%s", ctime(&msq_status.msg_stime));
+    printf("semid = %d\n", semid);
     return 0;
 }
