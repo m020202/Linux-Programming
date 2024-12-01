@@ -8,70 +8,41 @@
 #include <fcntl.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
-#include"pv.h"
 
-int p(int semid) {
-    struct sembuf p_buf;
+int main() {
+    int fd;
+    struct flock my_lock;
 
-    p_buf.sem_num = 0;
-    p_buf.sem_op = -1;
-    p_buf.sem_flg = SEM_UNDO;
+    my_lock.l_type = F_WRLCK;
+    my_lock.l_whence = SEEK_SET;
+    my_lock.l_start = 0;
+    my_lock.l_len = 10;
 
-    if (semop(semid, &p_buf, 1) == -1) {
-        perror("p(semid) failed");
-        return -1;
+    fd = open("hello", O_RDWR);
+
+    if (fcntl(fd, F_SETLKW, &my_lock) == -1) {
+        perror("parent: locking");
+        exit(1);
     }
 
-    return 0;
-}
+    printf("parent: locked record\n");
 
-int v(int semid) {
-    struct sembuf v_buf;
+    switch (fork()) {
+        case -1:
+            perror("fork");
+            exit(1);
+        case 0:
+            my_lock.l_len = 5;
+            if(fcntl(fd, F_SETLK, &my_lock) == -1) {
+                perror("child: locking");
+                exit(1);
+            }
 
-    v_buf.sem_num = 0;
-    v_buf.sem_op = 1;
-    v_buf.sem_flg = SEM_UNDO;
-
-    if (semop(semid, &v_buf, 1) == -1) {
-        perror("v(semid) failed");
-        return -1;
-    }
-
-    return 0;
-}
-
-
-void handleSem(key_t key) {
-    int semid;
-    int status = 0;
-
-    pid_t pid = getpid();
-    if ((semid = semget(key, 1, SEMPERM | IPC_CREAT | IPC_EXCL)) == -1) {
-        if (errno == EEXIST)
-            semid = semget(key, 1, 0);
-    }
-    else {
-        semun arg;
-        arg.val = 1;
-        status = semctl(semid, 0, SETVAL, arg);
-    }
-
-    printf("\nprocess %d before critical section\n", pid);
-    p(semid);
-    printf("process %d in critical section\n", pid);
-
-    sleep(10);
-
-    printf("process %d leaving critical section\n", pid);
-    v(semid);
-    printf("processs %d exiting\n", pid);
-}
-
-int main()
-{
-    key_t semkey = 0x200;
-    for (int i = 0; i < 3; ++i) {
-        if (fork() == 0) handleSem(semkey);
+            printf("child: locked and exiting\n");
+            exit(0);
+        default:
+            sleep(2);
+            printf("parent: exiting\n");
+            exit(0);
     }
 }
-
