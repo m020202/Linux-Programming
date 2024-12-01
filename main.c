@@ -16,35 +16,33 @@ int main() {
     my_lock.l_type = F_WRLCK;
     my_lock.l_whence = SEEK_SET;
     my_lock.l_start = 0;
-    my_lock.l_len = 10;
+    my_lock.l_len = 0;
 
-    fd = open("hello", O_RDWR);
+    if ((fd = open("hello", O_RDWR)) == -1) {
+        perror("open error: ");
+        return -1;
+    }
 
     if (fcntl(fd, F_SETLKW, &my_lock) == -1) {
-        perror("parent: locking");
-        exit(1);
+        perror("lock error: ");
+        close(fd);
+        return -2;
     }
 
-    printf("parent: locked record\n");
+    printf("File locked completel\n");
 
-    switch (fork()) {
-        case -1:
-            perror("fork");
-            exit(1);
-        case 0:
-            my_lock.l_len = 5;
-            if(fcntl(fd, F_SETLKW, &my_lock) == -1) {
-                perror("child: locking");
-                exit(1);
-            }
+    my_lock.l_type = F_UNLCK;
+    my_lock.l_start = 50;
+    my_lock.l_len = 20;
 
-            printf("child: locked and exiting\n");
-            sleep(2);
-            exit(0);
-        default:
-            sleep(2);
-            printf("parent: exiting\n");
-            close(fd);
-            wait(NULL);
+    if (fcntl(fd, F_SETLKW, &my_lock) == -1) {
+        perror("lock error: ");
+        close(fd);
+        return -3;
     }
+
+    printf("File locked From 0 to 50 and 70 to end\n");
+
+    close(fd);
+    return 0;
 }
