@@ -33,16 +33,18 @@ int main() {
             exit(1);
         case 0:
             my_lock.l_len = 5;
-            if(fcntl(fd, F_SETLK, &my_lock) == -1) {
+            if(fcntl(fd, F_SETLKW, &my_lock) == -1) {
                 perror("child: locking");
                 exit(1);
             }
 
             printf("child: locked and exiting\n");
+            sleep(2);
             exit(0);
         default:
             sleep(2);
             printf("parent: exiting\n");
-            exit(0);
+            close(fd);
+            wait(NULL);
     }
 }
