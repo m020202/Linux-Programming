@@ -11,42 +11,47 @@
 
 int main() {
     int fd;
-    struct flock my_lock, get_lock;
+    struct flock first_lock;
+    first_lock.l_type = F_WRLCK;
+    first_lock.l_whence = SEEK_SET;
+    first_lock.l_start = 0;
+    first_lock.l_len = 10;
 
-    my_lock.l_type = F_WRLCK;
-    my_lock.l_whence = SEEK_SET;
-    my_lock.l_start = 0;
-    my_lock.l_len = 0;
-    my_lock.l_pid = getpid();
+    struct flock second_lock;
+    second_lock.l_type = F_WRLCK;
+    second_lock.l_whence = SEEK_SET;
+    second_lock.l_start = 10;
+    second_lock.l_len = 5;
 
-    if ((fd = open("hello", O_RDWR)) == -1) {
-        perror("open error: ");
+    fd = open("hello", O_RDWR);
+
+    if (fcntl(fd, F_SETLKW, &first_lock) == -1) {
+        perror("A");
         return -1;
     }
 
-    if (fcntl(fd, F_SETLK, &my_lock) == -1) {
-        perror("lock error: ");
-        return -1;
-    }
-
-    printf("Cur locking pid: %d\n", my_lock.l_pid);
+    printf("A: lock succeeded (proc %d)\n", getpid());
 
     switch (fork()) {
         case -1:
-            perror("fork error: ");
-            return -1;
+            perror("fork error");
+            return -2;
         case 0:
-            my_lock.l_len = 5;
-            if (fcntl(fd, F_SETLK, &my_lock) == -1) {
-                if (errno == EAGAIN || errno == EACCES) {
-                    fcntl(fd, F_GETLK, &get_lock);
-                    printf("record locked by %d\n", get_lock.l_pid);
-                }
-                else
-                    perror("unexpected lock error");
-            }
+            if (fcntl(fd, F_SETLKW, &second_lock) == -1)
+                perror("B");
+            if (fcntl(fd, F_SETLKW, &first_lock) == -1)
+                perror("C");
+            printf("C: lock succeeded (proc %d)\n", getpid());
+            return 0;
         default:
+            printf("parent sleeping\n");
+            sleep(5);
+            if (fcntl(fd, F_SETLKW, &second_lock) == -1)
+                perror("D");
+            printf("D: lock succeeded (proc %d)\n", getpid());
+            close(fd);
             wait(NULL);
     }
+
     return 0;
 }
