@@ -6,33 +6,31 @@
 #include <signal.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/msg.h>
-
-#define MAXLEN 100
-#define QPERM 0644
-
-struct msg_entry {
-    long mtype;
-    char mtext[MAXLEN];
-};
+#include <sys/ipc.h>
+#include <sys/sem.h>
 
 int main() {
-    key_t key;
-    int msgid;
-    struct msg_entry msg;
-    int msglen;
+    int fd;
+    struct flock my_lock, get_lock;
 
-    key = ftok("msg_header.h", 2);
-    msgid = msgget(key, IPC_CREAT | QPERM);
+    my_lock.l_type = F_WRLCK;
+    my_lock.l_whence = SEEK_SET;
+    my_lock.l_start = 0;
+    my_lock.l_len = 0;
+    my_lock.l_pid = getpid();
 
-    if (msgid == -1) {
-        perror("msgget");
-        exit(1);
+    if ((fd = open("hello", O_RDWR)) == -1) {
+        perror("open error: ");
+        return -1;
     }
 
-    while((msglen = msgrcv(msgid, &msg, MAXLEN, 0,0)) > 0) {
-        printf("Received Message = %s\n", msg.mtext);
+    if (fcntl(fd, F_SETLK, &my_lock) == -1) {
+        perror("lock error: ");
+        return -1;
     }
+
+    printf("Cur locking pid: %d\n", my_lock.l_pid);
+    sleep(5);
+
     return 0;
 }
