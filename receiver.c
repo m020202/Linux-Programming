@@ -7,30 +7,36 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/ipc.h>
-#include <sys/sem.h>
+#include <sys/shm.h>
+#include "pv.h"
 
 int main() {
-    int fd;
-    struct flock my_lock, get_lock;
+    int shmId;
+    int i;
+    struct SHM_INFOS *shm_inf = NULL;
 
-    my_lock.l_type = F_WRLCK;
-    my_lock.l_whence = SEEK_SET;
-    my_lock.l_start = 0;
-    my_lock.l_len = 0;
-    my_lock.l_pid = getpid();
-
-    if ((fd = open("hello", O_RDWR)) == -1) {
-        perror("open error: ");
-        return -1;
+    shmId = shmget((key_t) 3836, sizeof(struct SHM_INFOS) * SHM_INFO_COUNT, 0666 | IPC_CREAT);
+    if (shmId == -1) {
+        perror("shmget failed: ");
+        exit(0);
     }
 
-    if (fcntl(fd, F_SETLK, &my_lock) == -1) {
-        perror("lock error: ");
-        return -1;
+    shm_inf = (struct SHM_INFOS *) shmat(shmId, 0, 0);
+    if (shm_inf == -1) {
+        perror("shmat attach is failed: ");
+        exit(0);
     }
 
-    printf("Cur locking pid: %d\n", my_lock.l_pid);
-    sleep(5);
 
-    return 0;
+    while (1) {
+        for (i = 0; i < SHM_INFO_COUNT; ++i) {
+            fprintf(stderr, "--- [%d] shared info ---\n", i);
+            fprintf(stderr, "String IP[%s]\n", shm_inf[i].str_ip);
+            fprintf(stderr, "String IP[%u]\n", shm_inf[i].int_ip);
+            fprintf(stderr, "String IP[%u]\n", shm_inf[i].int_id);
+        }
+
+        sleep(1);
+    }
+
 }
