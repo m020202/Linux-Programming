@@ -8,34 +8,29 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/msg.h>
-
-#define MAXLEN 100
-#define QPERM 0644
-
-struct msg_entry {
-    long mtype;
-    char mtext[MAXLEN];
-};
+#include <sys/shm.h>
+#include "pv.h"
 
 int main() {
-    key_t key;
-    int msgid;
-    struct msg_entry msg;
+    int shmId;
+    int i;
+    struct SHM_INFOS *shm_info = NULL;
 
-    key = ftok("msg_header.h", 1);
-    msgid = msgget(key, QPERM | IPC_CREAT);
-
-    if (msgid == -1) {
-        perror("msgget");
-        exit(1);
+    if ((shmId = shmget((key_t) 3836, sizeof(struct SHM_INFOS) * SHM_INFO_COUNT, IPC_CREAT | 0666)) == -1) {
+        perror("shmget failed: ");
+        exit(0);
     }
 
-    msg.mtype = 1;
-    strcpy(msg.mtext, "message type 1\n");
-    if (msgsnd(msgid, &msg, MAXLEN, IPC_NOWAIT) == -1) {
-        perror("msgsnd");
-        exit(1);
+    if ((shm_info = (struct SHM_INFOS *) shmat(shmId, 0, 0)) == NULL) {
+        perror("shmat failed: ");
+        exit(0);
     }
 
-    return 0;
+    while(1) {
+        for(i = 0; i < SHM_INFO_COUNT; ++i) {
+            snprintf(shm_info[i].str_ip, sizeof(shm_info[i].str_ip), "1.1.1.%d", i);
+            shm_info[i].int_id = 128 + i;
+            shm_info[i].int_ip = 12891010 + i;
+        }
+    }
 }
