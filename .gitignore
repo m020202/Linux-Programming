@@ -1,4 +1,5 @@
 *
 !*.c
+!*.h
 !/Term Project2/
 !/Term Project2/*
