@@ -13,11 +13,11 @@
 #include "pv.h"
 
 #define SEMPERM 0600
-typedef union semun {
+typedef union  {
     int val;
     struct semtid_ds *buf;
     unsigned short *array;
-};
+}semun;
 
 int P(int semid) {
     struct sembuf p_buf;
@@ -52,6 +52,17 @@ int main() {
     int shmId;
     int i;
     struct SHM_INFOS *shm_info = NULL;
+    int sem_id;
+
+    if ((sem_id = semget((key_t)0x200, 1, IPC_CREAT | IPC_EXCL)) == -1) {
+        if (errno == EEXIST)
+            sem_id = semget((key_t) 0x200, 1, 0);
+    }
+    else {
+        semun arg;
+        arg.val = 1;
+        semctl(sem_id, 0, SETVAL, arg);
+    }
 
     if ((shmId = shmget((key_t) 3836, sizeof(struct SHM_INFOS) * SHM_INFO_COUNT, IPC_CREAT | 0666)) == -1) {
         perror("shmget failed: ");
@@ -65,9 +76,11 @@ int main() {
 
     while(1) {
         for(i = 0; i < SHM_INFO_COUNT; ++i) {
+            P(sem_id);
             snprintf(shm_info[i].str_ip, sizeof(shm_info[i].str_ip), "1.1.1.%d", i);
             shm_info[i].int_id = 128 + i;
             shm_info[i].int_ip = 12891010 + i;
+            V(sem_id);
         }
     }
 }
