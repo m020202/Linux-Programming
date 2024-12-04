@@ -8,34 +8,22 @@
 #include <fcntl.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
-#include "share_memory.h"
+#include "msg_header.h"
 
 int main() {
-    int shmid;
-    shmid = shmget((key_t) 3836, sizeof(SHM_INFOS *) * SHM_INFO_COUNT, 0600 | IPC_CREAT);
+    key_t key;
+    int msgid;
+    struct msg_entry msg;
+    int len;
 
-    if (shmid == -1) {
-        perror("shmget failed: ");
-        exit(1);
-    }
-    SHM_INFOS *info = NULL;
-    void *shared_memory = NULL;
-    shared_memory = shmat(shmid, 0, 0);
-    if (shared_memory == (void *) -1) {
-        perror("shmat attach is failed: ");
+    key = ftok("msg_header.h", 1);
+    if ((msgid = msgget(key, IPC_CREAT | 0644)) == -1) {
+        perror("msgget");
         exit(1);
     }
 
-    info = (SHM_INFOS *) shared_memory;
-
-    while (1) {
-        for (int i = 0; i < SHM_INFO_COUNT; ++i) {
-            printf("---[%d] shared info ---", i);
-            printf("String IP[%s]\n", info[i].str_ip);
-            printf("String IP[%u]\n", info[i].int_ip);
-            printf("String IP[%u]\n", info[i].int_id);
-        }
-
-        sleep(1);
+    while((len = msgrcv(msgid, &msg, 100, 0, 0)) > 0) {
+        printf("Received Message = %s\n", msg.mtext);
     }
+
 }
