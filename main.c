@@ -18,37 +18,67 @@ void sig_handler(int signo) {
     exit(0);
 }
 
-int main() {
-    struct msg_entry msg;
-    struct sigaction act;
+int P(int semid) {
+    struct sembuf buf;
+    buf.sem_num = 0;
+    buf.sem_op = -1;
+    buf.sem_flg = SEM_UNDO;
 
-    act.sa_handler = sig_handler;
-    sigaction(SIGINT, &act, NULL);
-
-    if ((msgid = msgget(IPC_CREAT, 0644 | IPC_CREAT)) == -1) {
-        perror("msgget");
+    if (semop(semid, &buf,1) == -1) {
+        perror("P(semid) failed");
         exit(1);
     }
 
-    switch (fork()) {
-        case -1:
-            perror("fork");
-            exit(1);
-        case 0:
-            msg.mtype = 1;
-            strcpy(msg.mtext, "message type 1 from child\n");
-            if (msgsnd(msgid, &msg, 100, IPC_NOWAIT) == -1) {
-                perror("msgsnd");
-                exit(1);
-            }
-            return 0;
-        default:
-            while(msgrcv(msgid ,&msg,100, 0,0) > 0) {
-                printf("Received Message = %s\n", msg.mtext);
-            }
-            wait(NULL);
+    return 0;
+}
+
+int V(int semid) {
+    struct sembuf buf;
+    buf.sem_num = 0;
+    buf.sem_op = 1;
+    buf.sem_flg = SEM_UNDO;
+
+    if (semop(semid, &buf, 1) == -1) {
+        perror("V(semid) failed");
+        exit(1);
     }
 
     return 0;
+}
+
+void handleSem(key_t key) {
+    int semid;
+    pid_t pid = getpid();
+    if ((semid = semget(key, 1, IPC_CREAT | IPC_EXCL | 0644)) == -1) {
+        if (errno == EEXIST)
+            semid = semget(key, 1, 0);
+    }
+    else {
+        union semun arg;
+        arg.val = 1;
+        semctl(semid, 0,SETVAL, arg);
+    }
+
+    printf("\nProcess %d before c s\n", pid);
+    P(semid);
+
+    printf("Process %d in c s\n", pid);
+
+    sleep(1);
+
+    V(semid);
+    printf("\nProcess %d after c s\n", pid);
+    exit(1);
+
+}
+
+int main() {
+    key_t key = 0x200;
+
+    for (int i = 0; i < 2; ++i) {
+        if (fork() == 0) {
+            handleSem(key);
+        }
+    }
 
 }
