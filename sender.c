@@ -10,7 +10,7 @@
 #include <sys/msg.h>
 #include <sys/shm.h>
 #include <sys/sem.h>
-#include "pv.h"
+#include "share_memory.h"
 
 #define SEMPERM 0600
 typedef union  {

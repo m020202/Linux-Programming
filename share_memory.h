@@ -9,10 +9,10 @@
 #include <sys/stat.h>
 #include <sys/msg.h>
 
-#define SHM_INFO_COUNT 4
+#define SHM_INFO_COUNT 4;
 
-typedef struct SHM_INFOS {
+typedef struct {
     char str_ip[40];
     unsigned int int_ip;
     unsigned int int_id;
-};
+} SHM_INFOS;
