@@ -10,9 +10,20 @@
 #include <sys/sem.h>
 #include "msg_header.h"
 
+int msgid;
+
+void sig_handler(int signo) {
+    msgctl(msgid, IPC_RMID, 0);
+    printf("\nGraceful Exit!");
+    exit(0);
+}
+
 int main() {
-    int msgid;
     struct msg_entry msg;
+    struct sigaction act;
+
+    act.sa_handler = sig_handler;
+    sigaction(SIGINT, &act, NULL);
 
     if ((msgid = msgget(IPC_CREAT, 0644 | IPC_CREAT)) == -1) {
         perror("msgget");
