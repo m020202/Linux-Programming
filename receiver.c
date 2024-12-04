@@ -16,8 +16,7 @@ int main() {
     struct msg_entry msg;
     int len;
 
-    key = ftok("msg_header.h", 1);
-    if ((msgid = msgget(key, IPC_CREAT | 0644)) == -1) {
+    if ((msgid = msgget(IPC_PRIVATE, IPC_CREAT | 0644)) == -1) {
         perror("msgget");
         exit(1);
     }
