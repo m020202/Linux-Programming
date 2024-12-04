@@ -16,12 +16,12 @@ int main() {
     struct msg_entry msg;
     int len;
 
-    if ((msgid = msgget(IPC_PRIVATE, IPC_CREAT | 0644)) == -1) {
+    if ((msgid = msgget((key_t) 3836, IPC_CREAT | 0644)) == -1) {
         perror("msgget");
         exit(1);
     }
 
-    while((len = msgrcv(msgid, &msg, 100, 0, 0)) > 0) {
+    while((len = msgrcv(msgid, &msg, 100, -10, 0)) > 0) {
         printf("Received Message = %s\n", msg.mtext);
     }
 
