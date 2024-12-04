@@ -9,7 +9,12 @@
 #include <sys/stat.h>
 #include <sys/msg.h>
 
-struct msg_entry {
-    long mtype;
-    char mtext[100];
-};
+#define SEMPERM 0600
+#define TRUE 1
+#define FALSE 0
+
+typedef union _semun {
+    int val;
+    struct semid_ds *buf;
+    unsigned short *array;
+} semun;

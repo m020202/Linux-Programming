@@ -59,7 +59,7 @@ void handleSem(key_t key) {
         semctl(semid, 0,SETVAL, arg);
     }
 
-    printf("\nProcess %d before c s\n", pid);
+    printf("Process %d before c s\n", pid);
     P(semid);
 
     printf("Process %d in c s\n", pid);
@@ -67,7 +67,7 @@ void handleSem(key_t key) {
     sleep(1);
 
     V(semid);
-    printf("\nProcess %d after c s\n", pid);
+    printf("Process %d after c s\n", pid);
     exit(1);
 
 }
@@ -80,5 +80,7 @@ int main() {
             handleSem(key);
         }
     }
-
+    sleep(3);
+    wait(NULL);
+    return 0;
 }
