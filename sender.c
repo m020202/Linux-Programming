@@ -10,77 +10,27 @@
 #include <sys/msg.h>
 #include <sys/shm.h>
 #include <sys/sem.h>
-#include "share_memory.h"
+#include "msg_header.h"
 
-#define SEMPERM 0600
-typedef union  {
-    int val;
-    struct semtid_ds *buf;
-    unsigned short *array;
-}semun;
 
-int P(int semid) {
-    struct sembuf p_buf;
-    p_buf.sem_num = 0;
-    p_buf.sem_op = -1;
-    p_buf.sem_flg = SEM_UNDO;
-
-    if (semop(semid, &p_buf, 1) == -1) {
-        perror("semop failed: ");
-        return -1;
-    }
-
-    return 0;
-
-}
-
-int V(int semid) {
-    struct sembuf v_buf;
-    v_buf.sem_num = 0;
-    v_buf.sem_op = 1;
-    v_buf.sem_flg = SEM_UNDO;
-
-    if (semop(semid, &v_buf, 1) == -1) {
-        perror("semop failed: ");
-        return -1;
-    }
-
-    return 0;
-}
 
 int main() {
-    int shmId;
-    int i;
-    struct SHM_INFOS *shm_info = NULL;
-    int sem_id;
+    key_t key;
+    int msgid;
+    struct msg_entry msg;
 
-    if ((sem_id = semget((key_t)0x200, 1, IPC_CREAT | IPC_EXCL)) == -1) {
-        if (errno == EEXIST)
-            sem_id = semget((key_t) 0x200, 1, 0);
-    }
-    else {
-        semun arg;
-        arg.val = 1;
-        semctl(sem_id, 0, SETVAL, arg);
-    }
-
-    if ((shmId = shmget((key_t) 3836, sizeof(struct SHM_INFOS) * SHM_INFO_COUNT, IPC_CREAT | 0666)) == -1) {
-        perror("shmget failed: ");
+    key = ftok("msg_header.h", 1);
+    if ((msgid = msgget(key, 0644 | IPC_CREAT)) == -1) {
+        perror("msgget");
         exit(0);
     }
 
-    if ((shm_info = (struct SHM_INFOS *) shmat(shmId, 0, 0)) == NULL) {
-        perror("shmat failed: ");
-        exit(0);
+    msg.mtype = 1;
+    strcpy(msg.mtext, "message type $1\n");
+    if (msgsnd(msgid, &msg, 100, IPC_NOWAIT) == -1) {
+        perror("msgsnd");
+        exit(1);
     }
 
-    while(1) {
-        for(i = 0; i < SHM_INFO_COUNT; ++i) {
-            P(sem_id);
-            snprintf(shm_info[i].str_ip, sizeof(shm_info[i].str_ip), "1.1.1.%d", i);
-            shm_info[i].int_id = 128 + i;
-            shm_info[i].int_ip = 12891010 + i;
-            V(sem_id);
-        }
-    }
+    return 0;
 }
