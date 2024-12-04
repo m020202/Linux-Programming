@@ -11,32 +11,31 @@
 #include "share_memory.h"
 
 int main() {
-    int shmId;
-    int i;
-    struct SHM_INFOS *shm_inf = NULL;
+    int shmid;
+    shmid = shmget((key_t) 3836, sizeof(SHM_INFOS *) * SHM_INFO_COUNT, 0600 | IPC_CREAT);
 
-    shmId = shmget((key_t) 3836, sizeof(struct SHM_INFOS) * SHM_INFO_COUNT, 0666 | IPC_CREAT);
-    if (shmId == -1) {
+    if (shmid == -1) {
         perror("shmget failed: ");
-        exit(0);
+        exit(1);
     }
-
-    shm_inf = (struct SHM_INFOS *) shmat(shmId, 0, 0);
-    if (shm_inf == -1) {
+    SHM_INFOS *info = NULL;
+    void *shared_memory = NULL;
+    shared_memory = shmat(shmid, 0, 0);
+    if (shared_memory == (void *) -1) {
         perror("shmat attach is failed: ");
-        exit(0);
+        exit(1);
     }
 
+    info = (SHM_INFOS *) shared_memory;
 
     while (1) {
-        for (i = 0; i < SHM_INFO_COUNT; ++i) {
-            fprintf(stderr, "--- [%d] shared info ---\n", i);
-            fprintf(stderr, "String IP[%s]\n", shm_inf[i].str_ip);
-            fprintf(stderr, "String IP[%u]\n", shm_inf[i].int_ip);
-            fprintf(stderr, "String IP[%u]\n", shm_inf[i].int_id);
+        for (int i = 0; i < SHM_INFO_COUNT; ++i) {
+            printf("---[%d] shared info ---", i);
+            printf("String IP[%s]\n", info[i].str_ip);
+            printf("String IP[%u]\n", info[i].int_ip);
+            printf("String IP[%u]\n", info[i].int_id);
         }
 
         sleep(1);
     }
-
 }
