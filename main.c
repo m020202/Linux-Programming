@@ -8,79 +8,64 @@
 #include <fcntl.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
-#include "msg_header.h"
+#include <sys/sem.h>
+#include <sys/shm.h>
+#include "shared_memory.h"
 
-int msgid;
+static int shmid1, shmid2, semid;
 
-void sig_handler(int signo) {
-    msgctl(msgid, IPC_RMID, 0);
-    printf("\nGraceful Exit!");
-    exit(0);
-}
-
-int P(int semid) {
-    struct sembuf buf;
-    buf.sem_num = 0;
-    buf.sem_op = -1;
-    buf.sem_flg = SEM_UNDO;
-
-    if (semop(semid, &buf,1) == -1) {
-        perror("P(semid) failed");
+void getseg(struct databuf **p1, struct databuf **p2) {
+    if ((shmid1 = shmget(SHMKEY1, sizeof(struct databuf), IPC_CREAT | 0600 | IPC_EXCL)) == -1) {
+        perror("semget");
+        exit(1);
+    }
+    if ((shmid2 = shmget(SHMKEY2, sizeof(struct databuf), IPC_CREAT | IPC_EXCL | 0600)) == -1) {
+        perror("shmget");
         exit(1);
     }
 
-    return 0;
-}
-
-int V(int semid) {
-    struct sembuf buf;
-    buf.sem_num = 0;
-    buf.sem_op = 1;
-    buf.sem_flg = SEM_UNDO;
-
-    if (semop(semid, &buf, 1) == -1) {
-        perror("V(semid) failed");
+    if ((*p1 = (struct databuf *) shmat(shmid1, 0, 0)) == (struct databuf *)-1) {
+        perror("shmat");
         exit(1);
     }
 
-    return 0;
+    if ((*p2 = (struct databuf *) shmat(shmid2, 0, 0)) == (struct databuf *) -1) {
+        perror("shmat");
+        exit(1);
+    }
 }
 
-void handleSem(key_t key) {
-    int semid;
-    pid_t pid = getpid();
-    if ((semid = semget(key, 1, IPC_CREAT | IPC_EXCL | 0644)) == -1) {
+int getsem() {
+    semun x;
+    x.val = 0;
+
+    if ((semid = semget(SEMKEY, 2, 0600 | IPC_CREAT | IPC_EXCL)) == -1) {
         if (errno == EEXIST)
-            semid = semget(key, 1, 0);
+            semid = semget(SEMKEY, 1, 0);
     }
     else {
-        union semun arg;
-        arg.val = 1;
-        semctl(semid, 0,SETVAL, arg);
+        semctl(semid, 0, SETVAL, x);
+        semctl(semid, 1, SETVAL, x);
     }
 
-    printf("Process %d before c s\n", pid);
-    P(semid);
-
-    printf("Process %d in c s\n", pid);
-
-    sleep(1);
-
-    V(semid);
-    printf("Process %d after c s\n", pid);
-    exit(1);
-
+    return semid;
 }
 
-int main() {
-    key_t key = 0x200;
-
-    for (int i = 0; i < 2; ++i) {
-        if (fork() == 0) {
-            handleSem(key);
-        }
+void remobj() {
+    if (shmctl(shmid1, IPC_RMID, NULL) == -1) {
+        perror("shmctl");
+        exit(1);
     }
-    sleep(3);
-    wait(NULL);
+    if (shmctl(shmid2, IPC_RMID, NULL) == -1) {
+        perror("shmctl");
+        exit(1);
+    }
+    if (shmctl(semid, IPC_RMID, NULL) == -1) {
+        perror("shmctl");
+        exit(1);
+    }
+}
+int main() {
+    union semun ar
     return 0;
 }
