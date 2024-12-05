@@ -11,7 +11,7 @@
 
 #define SHMKEY1 (key_t) 0x10
 #define SHMKEY2 (key_t) 0x15
-#define SHMKEY3 (key_t) 0x20
+#define SEMKEY (key_t) 0x20
 
 #define SIZ 4*BUFSIZ
 
