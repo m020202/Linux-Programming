@@ -13,6 +13,8 @@
 #include "shared_memory.h"
 
 static int shmid1, shmid2, semid;
+struct sembuf p1 = {0, -1, 0}, p2 = {1, -1, 0};
+struct sembuf v1 = {0, 1, 0}, v2 = {1, -1, 0};
 
 void getseg(struct databuf **p1, struct databuf **p2) {
     if ((shmid1 = shmget(SHMKEY1, sizeof(struct databuf), IPC_CREAT | 0600 | IPC_EXCL)) == -1) {
@@ -63,6 +65,24 @@ void remobj() {
     if (shmctl(semid, IPC_RMID, NULL) == -1) {
         perror("shmctl");
         exit(1);
+    }
+}
+
+void reader(int semid, struct databuf buf1, struct databuf buf2) {
+    for (;;) {
+        buf1.d_nread = read(0, buf1.d_buf, SIZ);
+        semop(semid, &v1, 1);
+        semop(semid, &p2, 1);
+
+        if (buf1.d_nread <= 0)
+            return;
+        buf2.d_nread = read(0, buf2.d_buf, SIZ);
+
+        semop(semid, &v1, 1);
+        semop(semid, &p2, 1);
+
+        if (buf2.d_nread <= 0)
+            return;
     }
 }
 int main() {
