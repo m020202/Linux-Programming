@@ -10,27 +10,30 @@
 #include <sys/msg.h>
 #include <sys/shm.h>
 #include <sys/sem.h>
-#include "msg_header.h"
+#include "shared_memory.h"
 
 int main() {
-    key_t key;
-    int msgid;
-    struct msg_entry msg;
+    int shmid;
+    SHM_INFOS *shmInfos = NULL;
 
-    if ((msgid = msgget((key_t) 3836, 0644 | IPC_CREAT)) == -1) {
-        perror("msgget");
-        exit(0);
+    if ((shmid = shmget((key_t) 3836, sizeof(SHM_INFOS) * 4, IPC_CREAT | 0600)) == -1) {
+        perror("shmget");
+        exit(1);
     }
 
-    for (int i = 10; i > 0; i--) {
-        msg.mtype = 1;
-        char message[100];
-        sprintf(message, "Message Type $%d\n", i);
-        strcpy(msg.mtext, message);
-        if(msgsnd(msgid, &msg, 100, IPC_NOWAIT) == -1) {
-            perror("msgsnd");
-            exit(1);
+    void *shared_mem = NULL;
+    if ((shared_mem = shmat(shmid, 0, SHM_RND)) ==  (void *)-1) {
+        perror("shmat");
+        exit(1);
+    }
+
+    shmInfos = (SHM_INFOS *) shared_mem;
+
+    while (1) {
+        for (int i = 0; i < SHM_INFO_COUNT; ++i) {
+            snprintf(shmInfos[i].str_ip, sizeof(shmInfos[i].str_ip), "1.1.1.%d", i);
+            shmInfos[i].int_ip = 12891010 + i;
+            shmInfos[i].int_id = 128 + i;
         }
     }
-    return 0;
 }
