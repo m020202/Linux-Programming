@@ -9,19 +9,10 @@
 #include <sys/stat.h>
 #include <sys/msg.h>
 
-#define SHMKEY1 (key_t) 0x10
-#define SHMKEY2 (key_t) 0x15
-#define SEMKEY (key_t) 0x20
+#define SHM_INFO_COUNT 4
 
-#define SIZ 4*BUFSIZ
-
-struct databuf {
-    int d_nread;
-    char d_buf[SIZ];
-};
-
-typedef union _semun {
-    int val;
-    struct semid_ds *buf;
-    unsigned short *arr;
-} semun;
+typedef struct shm_info {
+    char str_ip[40];
+    unsigned int int_ip;
+    unsigned int int_id;
+} SHM_INFOS;
