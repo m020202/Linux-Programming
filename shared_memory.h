@@ -16,7 +16,7 @@
 #define SIZ 4*BUFSIZ
 
 struct databuf {
-    int d_read;
+    int d_nread;
     char d_buf[SIZ];
 };
 
