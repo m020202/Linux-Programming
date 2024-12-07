@@ -106,6 +106,24 @@ void writer(int semid, struct databuf buf1, struct databuf buf2) {
     }
 }
 int main() {
-    union semun arg;
+    int semid;
+    pid_t pid;
+    struct databuf *buf1, *buf2;
+
+    semid = getsem();
+    getseg(&buf1, &buf2);
+    switch (pid = fork()) {
+        case -1:
+            perror("fork");
+            return -1;
+        case 0:
+            writer(semid, *buf1, *buf2);
+            remobj();
+            break;
+        default:
+            reader(semid, *buf1, *buf2);
+            remobj();
+            break;
+    }
     return 0;
 }
