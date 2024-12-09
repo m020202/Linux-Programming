@@ -18,15 +18,17 @@ void handler(int signo) {
 }
 
 int main() {
-    struct sigaction act;
+    struct sigaction act, oact;
     act.sa_handler = handler;
     sigfillset(&act.sa_mask);
-    sigaction(SIGINT, &act, NULL);
+    sigaction(SIGINT, &act, &oact);
 
     printf("sleep call #1\n");
     sleep(2);
     printf("sleep call #2\n");
     sleep(2);
+
+    sigaction(SIGINT, &oact, NULL);
     printf("sleep call #3\n");
     sleep(2);
     return 0;
