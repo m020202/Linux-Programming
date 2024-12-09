@@ -20,7 +20,7 @@ int main() {
         exit(1);
     }
 
-    if ((shmInfo = (SHM_INFO *) shmat(shmid, 0, SHM_RND)) == -1) {
+    if ((shmInfo = (SHM_INFO *) shmat(shmid, 0, SHM_RND)) == (void *) -1) {
         perror("shmat");
         exit(1);
     }
