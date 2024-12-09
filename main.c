@@ -17,7 +17,7 @@ sigjmp_buf position;
 
 void sig_handler(int signo) {
     printf("\nSIGINT caught\n");
-    siglongjmp(position, 1);
+    siglongjmp(position, 3);
 }
 
 int main() {
@@ -28,9 +28,9 @@ int main() {
     printf("SIGINT start\n");
 
     int tmp = sigsetjmp(position, 1);
-    printf("SIGSETJMP RETURN!!!\n");
+    printf("SIGSETJMP RETURN!!! %d\n", tmp);
 
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 2; ++i) {
         printf("sleep call #%d\n", i);
         sleep(2);
     }
