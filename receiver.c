@@ -11,9 +11,20 @@
 #include <sys/sem.h>
 #include "shared_memory.h"
 
+int shmid;
+
+void sig_handler(int signo) {
+    shmctl(shmid, IPC_RMID, 0);
+    printf("\nGraceful Exit!");
+    exit(1);
+}
+
 int main() {
-    int shmid;
     SHM_INFO *shmInfo = NULL;
+    struct sigaction act;
+
+    act.sa_handler = sig_handler;
+    sigaction(SIGINT, &act, NULL);
 
     if ((shmid = shmget((key_t) 3836, sizeof(SHM_INFO) * 4, 0600 | IPC_CREAT)) == -1) {
         perror("shmget");
@@ -25,12 +36,12 @@ int main() {
         exit(1);
     }
 
-    while (1) {
+    while(1) {
         for (int i = 0; i < 4; ++i) {
-            printf("%d", i);
-            printf("%s", shmInfo[i].str_ip);
-            printf("%u", shmInfo[i].int_ip);
-            printf("%u", shmInfo[i].int_id);
+            printf("%d\n", i);
+            printf("%s\n", shmInfo[i].str_ip);
+            printf("%u\n", shmInfo[i].int_ip);
+            printf("%u\n", shmInfo[i].int_id);
 
             sleep(1);
         }
