@@ -10,26 +10,30 @@
 #include <sys/sem.h>
 #include <sys/sem.h>
 #include <sys/shm.h>
+#include <setjmp.h>
 #include "shared_memory.h"
 
-void handler(int signo) {
-    printf("\nCATCHINT: signo = %d\n", signo);
-    printf("CATCHINT: returning\n\n");
+sigjmp_buf position;
+
+void sig_handler(int signo) {
+    printf("\nSIGINT caught\n");
+    siglongjmp(position, 1);
 }
 
 int main() {
-    struct sigaction act, oact;
-    act.sa_handler = handler;
-    sigfillset(&act.sa_mask);
-    sigaction(SIGINT, &act, &oact);
+    struct sigaction act;
+    act.sa_handler = sig_handler;
 
-    printf("sleep call #1\n");
-    sleep(2);
-    printf("sleep call #2\n");
-    sleep(2);
+    sigaction(SIGINT, &act, NULL);
+    printf("SIGINT start\n");
 
-    sigaction(SIGINT, &oact, NULL);
-    printf("sleep call #3\n");
-    sleep(2);
+    int tmp = sigsetjmp(position, 1);
+    printf("SIGSETJMP RETURN!!!\n");
+
+    for (int i = 0; i < 4; ++i) {
+        printf("sleep call #%d\n", i);
+        sleep(2);
+    }
+
     return 0;
 }
