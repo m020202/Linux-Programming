@@ -11,8 +11,8 @@
 
 #define SHM_INFO_COUNT 4
 
-typedef struct shm_info {
+typedef struct _shm_info {
     char str_ip[40];
-    unsigned int int_ip;
     unsigned int int_id;
-} SHM_INFOS;
+    unsigned int int_ip;
+} SHM_INFO;
