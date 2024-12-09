@@ -12,117 +12,47 @@
 #include <sys/shm.h>
 #include "shared_memory.h"
 
-static int shmid1, shmid2, semid;
-struct sembuf p1 = {0, -1, 0}, p2 = {1, -1, 0};
-struct sembuf v1 = {0, 1, 0}, v2 = {1, -1, 0};
+static int time_out;
 
-void getseg(struct databuf **p1, struct databuf **p2) {
-    if ((shmid1 = shmget(SHMKEY1, sizeof(struct databuf), IPC_CREAT | 0600 | IPC_EXCL)) == -1) {
-        perror("semget");
-        exit(1);
+void sig_handler(int signo) {
+    if (signo == SIGINT) {
+        printf("\n DO not ctrl C!!\n");
     }
-    if ((shmid2 = shmget(SHMKEY2, sizeof(struct databuf), IPC_CREAT | IPC_EXCL | 0600)) == -1) {
-        perror("shmget");
-        exit(1);
-    }
-
-    if ((*p1 = (struct databuf *) shmat(shmid1, 0, 0)) == (struct databuf *)-1) {
-        perror("shmat");
-        exit(1);
-    }
-
-    if ((*p2 = (struct databuf *) shmat(shmid2, 0, 0)) == (struct databuf *) -1) {
-        perror("shmat");
-        exit(1);
+    else if (signo == SIGALRM) {
+        time_out = 1;
     }
 }
 
-int getsem() {
-    semun x;
-    x.val = 0;
-
-    if ((semid = semget(SEMKEY, 2, 0600 | IPC_CREAT | IPC_EXCL)) == -1) {
-        if (errno == EEXIST)
-            semid = semget(SEMKEY, 1, 0);
-    }
-    else {
-        semctl(semid, 0, SETVAL, x);
-        semctl(semid, 1, SETVAL, x);
-    }
-
-    return semid;
-}
-
-void remobj() {
-    if (shmctl(shmid1, IPC_RMID, NULL) == -1) {
-        perror("shmctl");
-        exit(1);
-    }
-    if (shmctl(shmid2, IPC_RMID, NULL) == -1) {
-        perror("shmctl");
-        exit(1);
-    }
-    if (shmctl(semid, IPC_RMID, NULL) == -1) {
-        perror("shmctl");
-        exit(1);
-    }
-}
-
-void reader(int semid, struct databuf buf1, struct databuf buf2) {
-    for (;;) {
-        buf1.d_nread = read(0, buf1.d_buf, SIZ);
-        semop(semid, &v1, 1);
-        semop(semid, &p2, 1);
-
-        if (buf1.d_nread <= 0)
-            return;
-        buf2.d_nread = read(0, buf2.d_buf, SIZ);
-
-        semop(semid, &v1, 1);
-        semop(semid, &p2, 1);
-
-        if (buf2.d_nread <= 0)
-            return;
-    }
-}
-
-void writer(int semid, struct databuf buf1, struct databuf buf2) {
-    for (;;) {
-        semop(semid, &p1, 1);
-        semop(semid, &v2, 1);
-
-        if (buf1.d_nread <= 0)
-            return;
-
-        write(1, buf1.d_buf, buf1.d_nread);
-
-        semop(semid, &p1, 1);
-        semop(semid, &v2, 1);
-
-        if (buf2.d_nread <= 0)
-            return;
-
-        write(1, buf2.d_buf, buf2.d_nread);
-    }
-}
 int main() {
-    int semid;
-    pid_t pid;
-    struct databuf *buf1, *buf2;
+    int pid;
+    struct sigaction act;
+    act.sa_handler = sig_handler;
+    sigaction(SIGINT, &act, NULL);
 
-    semid = getsem();
-    getseg(&buf1, &buf2);
     switch (pid = fork()) {
         case -1:
-            perror("fork");
-            return -1;
+            perror("fork err");
+            exit(1);
         case 0:
-            writer(semid, *buf1, *buf2);
-            remobj();
+            printf("This is a child!\n");
+            time_out = 0;
+            alarm(5);
+            while (!time_out) {
+                pause();
+            }
             break;
         default:
-            reader(semid, *buf1, *buf2);
-            remobj();
+            act.sa_handler = SIG_IGN;
+            sigaction(SIGINT, &act, NULL);
+            wait(NULL);
+            printf("This is a parent!\n");
+            act.sa_handler = sig_handler;
+            sigaction(SIGINT, &act, NULL);
+            time_out = 0;
+            alarm(2);
+            while (!time_out) {
+                pause();
+            }
             break;
     }
     return 0;
