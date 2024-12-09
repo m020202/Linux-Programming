@@ -12,47 +12,22 @@
 #include <sys/shm.h>
 #include "shared_memory.h"
 
-static int time_out;
-
-void sig_handler(int signo, siginfo_t *siginfo, void *par2) {
-    if (signo == SIGINT) {
-        printf("\n DO not ctrl C!!\n");
-    }
-    else if (signo == SIGALRM) {
-        time_out = 1;
-    }
+void handler(int signo) {
+    printf("\nCATCHINT: signo = %d\n", signo);
+    printf("CATCHINT: returning\n\n");
 }
 
 int main() {
-    int pid;
     struct sigaction act;
-    act.sa_sigaction = sig_handler;
+    act.sa_handler = handler;
+    sigfillset(&act.sa_mask);
     sigaction(SIGINT, &act, NULL);
-    sigaction(SIGALRM, &act, NULL);
 
-    switch (pid = fork()) {
-        case -1:
-            perror("fork err");
-            exit(1);
-        case 0:
-            printf("This is a child!\n");
-            time_out = 0;
-            alarm(5);
-            while (!time_out) {
-                pause();
-            }
-            printf("이제 끝났어 자식,,,");
-            break;
-        default:
-            wait(NULL);
-            printf("This is a parent!\n");
-            time_out = 0;
-            alarm(2);
-            while (!time_out) {
-                pause();
-            }
-            printf("이제 끝났어 부모 ,,,");
-            break;
-    }
+    printf("sleep call #1\n");
+    sleep(2);
+    printf("sleep call #2\n");
+    sleep(2);
+    printf("sleep call #3\n");
+    sleep(2);
     return 0;
 }
