@@ -14,7 +14,7 @@
 
 static int time_out;
 
-void sig_handler(int signo) {
+void sig_handler(int signo, siginfo_t *siginfo, void *par2) {
     if (signo == SIGINT) {
         printf("\n DO not ctrl C!!\n");
     }
@@ -26,8 +26,9 @@ void sig_handler(int signo) {
 int main() {
     int pid;
     struct sigaction act;
-    act.sa_handler = sig_handler;
+    act.sa_sigaction = sig_handler;
     sigaction(SIGINT, &act, NULL);
+    sigaction(SIGALRM, &act, NULL);
 
     switch (pid = fork()) {
         case -1:
@@ -40,19 +41,17 @@ int main() {
             while (!time_out) {
                 pause();
             }
+            printf("이제 끝났어 자식,,,");
             break;
         default:
-            act.sa_handler = SIG_IGN;
-            sigaction(SIGINT, &act, NULL);
             wait(NULL);
             printf("This is a parent!\n");
-            act.sa_handler = sig_handler;
-            sigaction(SIGINT, &act, NULL);
             time_out = 0;
             alarm(2);
             while (!time_out) {
                 pause();
             }
+            printf("이제 끝났어 부모 ,,,");
             break;
     }
     return 0;

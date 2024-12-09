@@ -11,26 +11,29 @@
 #include <sys/shm.h>
 #include <sys/sem.h>
 #include "shared_memory.h"
+static int time_out;
+
+void sig_handler(int signo) {
+    if (signo == SIGINT) {
+        printf("\nDo not SIGINT!\n");
+    }
+    else if (signo == SIGALRM) {
+        time_out = 1;
+    }
+}
 
 int main() {
-    int shmId;
-    SHM_INFO *shmInfo = NULL;
+    struct sigaction act;
+    act.sa_handler = sig_handler;
+    sigaction(SIGINT, &act, NULL);
+    sigaction(SIGALRM, &act, NULL);
 
-    if ((shmId = shmget((key_t) 3836, sizeof(SHM_INFO) * 4, 0600 | IPC_CREAT)) == -1) {
-        perror("shmget");
-        exit(1);
+    time_out = 0;
+    alarm(5);
+    while (!time_out) {
+        pause();
     }
 
-    if ((shmInfo = (SHM_INFO *) shmat(shmId, 0, SHM_RND)) == (void *) -1) {
-        perror("shmat");
-        exit(1);
-    }
-
-    while (1) {
-        for (int i = 0; i < 4; ++i) {
-            snprintf(shmInfo[i].str_ip, sizeof(shmInfo[i].str_ip), "1.1.1.%d", i);
-            shmInfo[i].int_ip = 12891010 + i;
-            shmInfo[i].int_id = 128 + i;
-        }
-    }
+    printf("Finish!!");
+    return 0;
 }
