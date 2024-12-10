@@ -13,32 +13,58 @@
 #include <setjmp.h>
 #include "shared_memory.h"
 
-void sig_handler(int signo, siginfo_t *siginfo, void *p) {
-    printf("%d Receive from %d\n", getpid(), siginfo->si_pid);
+void child(int p[2]) {
+    close(p[0]);
+    for (int i = 0; i < 3; ++i) {
+        write(p[1], "hello!\n", 10);
+        sleep(2);
+    }
+
+    write(p[1], "bye !!\n", 10);
+    exit(1);
+}
+
+void parent(int p[2]) {
+    close(p[1]);
+    int nread;
+    char buf[16];
+    for (;;) {
+        switch (nread = read(p[0], buf, 10)) {
+            case -1:
+                if (errno == EAGAIN) {
+                    printf("EMPTY!!\n");
+                    sleep(1);
+                    break;
+                }
+                else {
+                    printf("ERROR!\n");
+                    exit(1);
+                }
+            case 0:
+                printf("EOF !!\n");
+                exit(1);
+            default:
+                printf("MSG= %s", buf);
+        }
+    }
 }
 
 int main() {
-    struct sigaction act;
-    act.sa_sigaction = sig_handler;
-    sigaction(SIGUSR1, &act, NULL);
-    pid_t pid;
+    int p[2];
+    if (pipe(p) == -1) {
+        perror("pipe");
+        exit(1);
+    }
+    fcntl(p[0], F_SETFL, O_NONBLOCK);
 
-    switch(pid = fork()) {
+    switch(fork()) {
         case -1:
-            perror("fork");
+            perror("fork()");
             exit(1);
         case 0:
-            for(int i = 0; i < 5; ++i) {
-                sleep(1);
-                kill(getppid(), SIGUSR1);
-                pause();
-            }
+            child(p);
         default:
-            for(int i = 0; i < 5; ++i) {
-                pause();
-                sleep(1);
-                kill(pid, SIGUSR1);
-            }
+            parent(p);
     }
 
     return 0;
