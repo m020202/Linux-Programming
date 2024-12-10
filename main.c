@@ -7,71 +7,47 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/ipc.h>
-#include <sys/sem.h>
-#include <sys/sem.h>
 #include <sys/shm.h>
-#include <setjmp.h>
+#include <sys/sem.h>
 #include "shared_memory.h"
+#define MAXSIZE 64
 
-#define MAXSIZE 6
+int main(int argc, char **argv) {
+    int fd;
+    struct flock my_lock;
+    my_lock.l_type = F_WRLCK;
+    my_lock.l_start = 0;
+    my_lock.l_len = 5;
 
-void child(int p[2]) {
-    close(p[0]);
-
-    for (int i = 0; i < 2; ++i) {
-        write(p[1], "hello", MAXSIZE);
-        sleep(getpid() % 4);
+    if ((fd = open("hello", O_WRONLY)) == -1) {
+        perror("open");
+        exit(1);
     }
 
-    write(p[1], "Bye!!", MAXSIZE);
-    exit(0);
-}
-
-void parent(int p[3][2]) {
-    fd_set readset, tmp;
-    char buf[MAXSIZE], ch;
-    FD_ZERO(&readset);
-    FD_SET(0, &readset);
-    for (int i = 0; i < 3; ++i) {
-        close(p[i][1]);
-        FD_SET(p[i][0], &readset);
+    if (fcntl(fd, F_SETLKW, &my_lock) == -1) {
+        perror("fcntl");
+        exit(1);
     }
 
-    while (tmp = readset, select(p[2][0] + 1, &tmp, NULL, NULL, NULL) > 0) {
-        if (FD_ISSET(0, &tmp)) {
-            printf("From standard input...: ");
-            read(0, &ch, 1);
-            printf("%c", ch);
-        }
+    printf("Parent: lock recorded\n");
 
-        for (int i = 0; i < 3; ++i) {
-            if (FD_ISSET(p[i][0], &tmp)) {
-                printf("Message From Child: %d\n", i);
-                read(p[i][0], buf, MAXSIZE);
-                printf("MSG= %s\n", buf);
-            }
-        }
-
-        if (waitpid(-1, NULL, WNOHANG) == -1) return;
-    }
-}
-
-int main() {
-    int p[3][2];
-
-    for (int i = 0; i < 3; ++i) {
-        if (pipe(p[i]) == -1) {
-            perror("pipe");
+    switch (fork()) {
+        case -1:
+            perror("fork");
             exit(1);
-        }
-        switch (fork()) {
-            case -1:
-                perror("fork");
+        case 0:
+            my_lock.l_len = 5;
+            if (fcntl(fd, F_SETLKW, &my_lock) == -1) {
+                perror("fcntl");
+                printf("child: locking\n");
                 exit(1);
-            case 0:
-                child(p[i]);
-        }
+            }
+
+            printf("child: locked and exiting\n");
+            exit(1);
     }
-    parent(p);
+
+    sleep(3);
+    printf("parent: exiting\n");
     return 0;
 }
