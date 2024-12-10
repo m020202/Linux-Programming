@@ -11,21 +11,24 @@
 #include <sys/shm.h>
 #include <sys/sem.h>
 #include "shared_memory.h"
-#define MAXSIZE 64
 
 
 int main(int argc, char** argv) {
-    int fd;
-    if ((fd = open("fifo", O_WRONLY)) == -1) {
-        perror("open");
+    int msqid;
+    struct msg_entry entry;
+
+
+    if ((msqid = msgget((key_t) 3836, QPERM | IPC_CREAT)) == -1) {
+        perror("msgget");
         exit(1);
     }
 
-    for (int i = 1; i < argc; ++i) {
-        if (write(fd, argv[i], MAXSIZE) == -1) {
-            perror("sender write");
-            exit(1);
-        }
+    entry.mtype = 1;
+    strcpy(entry.mtext,"hello world");
+
+    if (msgsnd(msqid, &entry, MAXLEN, IPC_NOWAIT) == -1) {
+        perror("msgsnd");
+        exit(1);
     }
 
     return 0;

@@ -10,24 +10,20 @@
 #include <sys/shm.h>
 #include <sys/sem.h>
 #include "shared_memory.h"
-#define MAXSIZE 64
 
 int main(int argc, char **argv) {
-    char buf[MAXSIZE];
-    int fd;
+    int msqid;
 
-    if (mkfifo("fifo", 0666) == -1) {
-        perror("fifo");
+    if((msqid = msgget((key_t)3836, QPERM | IPC_CREAT)) == -1) {
+        perror("msgget");
         exit(1);
     }
 
-    if ((fd = open("fifo", O_RDONLY)) == -1) {
-        perror("open");
-        exit(1);
-    }
-
-    while(read(fd, buf, MAXSIZE) > 0) {
-        printf("Message received: %s\n", buf);
+    struct msg_entry entry;
+    int msglen;
+    while((msglen = msgrcv(msqid, &entry, MAXLEN, 0, IPC_NOWAIT)) > 0) {
+        printf("LEN: %d\n", msglen);
+        printf("%s\n", entry.mtext);
     }
 
     return 0;
