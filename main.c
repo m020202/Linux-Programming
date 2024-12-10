@@ -13,39 +13,32 @@
 #include <setjmp.h>
 #include "shared_memory.h"
 
-int ntimes = 0;
+static int time_out;
+static char answer[100];
 
-void p_action(int sig) {
-    printf("Parent caught signal #%d\n", ++ntimes);
+void sig_handler(int signo) {
+    time_out = 1;
 }
-
-void c_action(int sig) {
-    printf("Child caught signal #%d\n", ++ntimes);
-}
-
 int main() {
-    struct sigaction p_act, c_act;
-    p_act.sa_handler = p_action;
-    c_act.sa_handler = c_action;
-    pid_t pid;
+    int i;
+    time_out = 0;
+    struct sigaction act, oact;
+    act.sa_handler = sig_handler;
+    sigaction(SIGALRM, &act, &oact);
+    time_out = 0;
 
-    switch (pid = fork()) {
-        case -1:
-            perror("fork");
-            exit(1);
-        case 0:
-            sigaction(SIGUSR1, &c_act, NULL);
-            while (1) {
-                sleep(1);
-                kill(getppid(), SIGUSR1);
-                pause();
-            }
-        default:
-            sigaction(SIGUSR1, &p_act, NULL);
-            while (1) {
-                pause();
-                sleep(1);
-                kill(pid, SIGUSR1);
-            }
+    for (i = 0; i < 5; ++i) {
+        printf("\nEnter the string: ");
+        alarm(3);
+        scanf("%s", answer);
+        alarm(0);
+        if (!time_out) break;
     }
+
+    if (i == 5)
+        printf("\nFALSE!!\n");
+    else
+        printf("\nTRUE!!\n");
+
+    return 0;
 }
