@@ -20,14 +20,18 @@ void goback() {
     siglongjmp(position, 1);
 }
 int main() {
-    struct sigaction act;
-    if (sigsetjmp(position, 1) == 0) {
-        act.sa_handler = goback;
-        sigaction(SIGINT, &act, NULL);
-    }
+    sigset_t set1, set2;
 
-    sleep(4);
+    sigfillset(&set1);
+    sigfillset(&set2);
+    sigdelset(&set2, SIGINT);
+    sigdelset(&set2, SIGQUIT);
 
+    sigprocmask(SIG_SETMASK, &set1, NULL);
+
+    sigprocmask(SIG_UNBLOCK, &set2, NULL);
+
+    sigprocmask(SIG_UNBLOCK, &set1, NULL);
 
     return 0;
 }
