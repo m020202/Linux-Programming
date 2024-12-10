@@ -13,59 +13,65 @@
 #include <setjmp.h>
 #include "shared_memory.h"
 
+#define MAXSIZE 6
+
 void child(int p[2]) {
     close(p[0]);
-    for (int i = 0; i < 3; ++i) {
-        write(p[1], "hello!\n", 10);
-        sleep(2);
+
+    for (int i = 0; i < 2; ++i) {
+        write(p[1], "hello", MAXSIZE);
+        sleep(getpid() % 4);
     }
 
-    write(p[1], "bye !!\n", 10);
-    exit(1);
+    write(p[1], "Bye!!", MAXSIZE);
+    exit(0);
 }
 
-void parent(int p[2]) {
-    close(p[1]);
-    int nread;
-    char buf[16];
-    for (;;) {
-        switch (nread = read(p[0], buf, 10)) {
-            case -1:
-                if (errno == EAGAIN) {
-                    printf("EMPTY!!\n");
-                    sleep(1);
-                    break;
-                }
-                else {
-                    printf("ERROR!\n");
-                    exit(1);
-                }
-            case 0:
-                printf("EOF !!\n");
-                exit(1);
-            default:
-                printf("MSG= %s", buf);
+void parent(int p[3][2]) {
+    fd_set readset, tmp;
+    char buf[MAXSIZE], ch;
+    FD_ZERO(&readset);
+    FD_SET(0, &readset);
+    for (int i = 0; i < 3; ++i) {
+        close(p[i][1]);
+        FD_SET(p[i][0], &readset);
+    }
+
+    while (tmp = readset, select(p[2][0] + 1, &tmp, NULL, NULL, NULL) > 0) {
+        if (FD_ISSET(0, &tmp)) {
+            printf("From standard input...: ");
+            read(0, &ch, 1);
+            printf("%c", ch);
         }
+
+        for (int i = 0; i < 3; ++i) {
+            if (FD_ISSET(p[i][0], &tmp)) {
+                printf("Message From Child: %d\n", i);
+                read(p[i][0], buf, MAXSIZE);
+                printf("MSG= %s\n", buf);
+            }
+        }
+
+        if (waitpid(-1, NULL, WNOHANG) == -1) return;
     }
 }
 
 int main() {
-    int p[2];
-    if (pipe(p) == -1) {
-        perror("pipe");
-        exit(1);
-    }
-    fcntl(p[0], F_SETFL, O_NONBLOCK);
+    int p[3][2];
 
-    switch(fork()) {
-        case -1:
-            perror("fork()");
+    for (int i = 0; i < 3; ++i) {
+        if (pipe(p[i]) == -1) {
+            perror("pipe");
             exit(1);
-        case 0:
-            child(p);
-        default:
-            parent(p);
+        }
+        switch (fork()) {
+            case -1:
+                perror("fork");
+                exit(1);
+            case 0:
+                child(p[i]);
+        }
     }
-
+    parent(p);
     return 0;
 }
