@@ -14,40 +14,42 @@
 
 int main(int argc, char **argv) {
     int fd;
-    struct flock my_lock;
-    my_lock.l_type = F_WRLCK;
-    my_lock.l_start = 0;
-    my_lock.l_len = 5;
+    struct flock lock1, lock2;
+    lock1.l_type = F_WRLCK;
+    lock1.l_whence = SEEK_SET;
+    lock1.l_len = 5;
+    lock1.l_start = 0;
 
-    if ((fd = open("hello", O_WRONLY)) == -1) {
-        perror("open");
+    lock2.l_type = F_WRLCK;
+    lock2.l_whence = SEEK_SET;
+    lock2.l_start = 5;
+    lock2.l_len = 10;
+
+    fd = open("hello", O_WRONLY);
+
+    if (fcntl(fd, F_SETLKW, &lock1) == -1) {
+        perror("A");
         exit(1);
     }
-
-    if (fcntl(fd, F_SETLKW, &my_lock) == -1) {
-        perror("fcntl");
-        exit(1);
-    }
-
-    printf("Parent: lock recorded\n");
 
     switch (fork()) {
         case -1:
             perror("fork");
             exit(1);
         case 0:
-            my_lock.l_len = 5;
-            if (fcntl(fd, F_SETLKW, &my_lock) == -1) {
-                perror("fcntl");
-                printf("child: locking\n");
-                exit(1);
+            if (fcntl(fd, F_SETLKW, &lock2) == -1) {
+                perror("B");
             }
-
-            printf("child: locked and exiting\n");
+            if (fcntl(fd, F_SETLKW, &lock1) == -1) {
+                perror("C");
+            }
             exit(1);
     }
+    sleep(5);
+    if (fcntl(fd, F_SETLKW, &lock2) == -1) {
+        perror("D");
+        exit(1);
+    }
 
-    sleep(3);
-    printf("parent: exiting\n");
     return 0;
 }
