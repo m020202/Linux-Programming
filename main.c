@@ -15,25 +15,19 @@
 
 sigjmp_buf position;
 
-void sig_handler(int signo) {
-    printf("\nSIGINT caught\n");
-    siglongjmp(position, 3);
+void goback() {
+    printf("\nInterrupted\n");
+    siglongjmp(position, 1);
 }
-
 int main() {
     struct sigaction act;
-    act.sa_handler = sig_handler;
-
-    sigaction(SIGINT, &act, NULL);
-    printf("SIGINT start\n");
-
-    int tmp = sigsetjmp(position, 1);
-    printf("SIGSETJMP RETURN!!! %d\n", tmp);
-
-    for (int i = 0; i < 2; ++i) {
-        printf("sleep call #%d\n", i);
-        sleep(2);
+    if (sigsetjmp(position, 1) == 0) {
+        act.sa_handler = goback;
+        sigaction(SIGINT, &act, NULL);
     }
+
+    sleep(4);
+
 
     return 0;
 }
