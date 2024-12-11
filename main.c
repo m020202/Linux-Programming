@@ -9,47 +9,21 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/sem.h>
+#include <setjmp.h>
 #include "shared_memory.h"
 #define MAXSIZE 64
 
-int main(int argc, char **argv) {
-    int fd;
-    struct flock lock1, lock2;
-    lock1.l_type = F_WRLCK;
-    lock1.l_whence = SEEK_SET;
-    lock1.l_len = 5;
-    lock1.l_start = 0;
 
-    lock2.l_type = F_WRLCK;
-    lock2.l_whence = SEEK_SET;
-    lock2.l_start = 5;
-    lock2.l_len = 10;
+int main() {
+    int semid;
 
-    fd = open("hello", O_WRONLY);
-
-    if (fcntl(fd, F_SETLKW, &lock1) == -1) {
-        perror("A");
+    if ((semid = semget((key_t) 3836, 1, 0600 | IPC_CREAT)) == -1) {
+        perror("semget");
         exit(1);
+    } else {
+        union semun arg;
+        arg.val = 1;
+        semctl(semid, 0, SETVAL, arg);
     }
-
-    switch (fork()) {
-        case -1:
-            perror("fork");
-            exit(1);
-        case 0:
-            if (fcntl(fd, F_SETLKW, &lock2) == -1) {
-                perror("B");
-            }
-            if (fcntl(fd, F_SETLKW, &lock1) == -1) {
-                perror("C");
-            }
-            exit(1);
-    }
-    sleep(5);
-    if (fcntl(fd, F_SETLKW, &lock2) == -1) {
-        perror("D");
-        exit(1);
-    }
-
     return 0;
 }
