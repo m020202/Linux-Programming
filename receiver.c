@@ -10,41 +10,37 @@
 #include <sys/shm.h>
 #include <sys/sem.h>
 #include "shared_memory.h"
-int shmid;
+#define BUFSIZE 64
 
+int count;
 void sig_handler(int signo) {
-    if (signo == SIGINT) {
-        printf("\nGradeful Exit!\n");
-        shmctl(shmid, IPC_RMID, 0);
-        exit(1);
-    }
+    printf("write blocked after %d characters\n", count);
+    exit(1);
 }
 
 int main(int argc, char **argv) {
     struct sigaction act;
     act.sa_handler = sig_handler;
-    sigaction(SIGINT, &act, NULL);
+    sigaction(SIGALRM, &act, NULL);
 
-    if ((shmid = shmget((key_t) 0x20, sizeof(SHM_INFOS) * SHM_INFO_COUNT, 0600 | IPC_CREAT)) == -1) {
-        perror("shmget");
+    int p[2];
+
+    if (pipe(p) == -1) {
+        perror("pipe");
         exit(1);
     }
 
-    void *shared_memory = shmat(shmid, 0, SHM_RND);
-    if (shared_memory == (void *) -1) {
-        perror("shmat");
-        exit(1);
-    }
+    int buf_size = fpathconf(p[1], _PC_PIPE_BUF);
+    printf("MAX SIZE OF BUF: %d\n", buf_size);
 
-    SHM_INFOS *shm_info = (SHM_INFOS *) shared_memory;
-
+    char c = 'x';
     while (1) {
-        for (int i = 0; i < SHM_INFO_COUNT; ++i) {
-            printf("---[%d]---\n", i);
-            printf("String IP[%s]\n", shm_info[i].str_ip);
-            printf("String IP[%u]\n", shm_info[i].int_id);
-            printf("String IP[%u]\n", shm_info[i].int_ip);
-            sleep(1);
+        alarm(3);
+        write(p[1], &c, 1);
+        alarm(0);
+        count++;
+        if ((count % 1024) == 0) {
+            printf("%d charcters in pipe\n", count);
         }
     }
     return 0;

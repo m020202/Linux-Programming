@@ -9,10 +9,11 @@
 #include <sys/stat.h>
 #include <sys/msg.h>
 
-#define SHM_INFO_COUNT 4
+#define QPERM 0644
+#define MAXLEN 100
 
-typedef struct shm_info {
-    char str_ip[40];
-    unsigned int int_ip;
-    unsigned int int_id;
-} SHM_INFOS;
+typedef union _semun {
+    int val;
+    struct semid_ds *buf;
+    unsigned short *arr;
+};

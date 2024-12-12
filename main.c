@@ -11,38 +11,68 @@
 #include <sys/sem.h>
 #include <setjmp.h>
 #include "shared_memory.h"
-#define MAXSIZE 64
+#define BUFSIZE 64
 
-int time_out;
+void parent(int p[3][2]) {
+    char buf_char;
+    char buf[BUFSIZE];
+    int nread;
+    fd_set readset, tempset;
+    FD_ZERO(&readset);
+    FD_SET(0, &readset);
+    for (int i = 0; i < 3; ++i) {
+        close(p[i][1]);
+        FD_SET(p[i][0], &readset);
+    }
 
-void sig_handler(int signo) {
-    if (signo == SIGALRM) {
-        time_out = 1;
+    while(tempset = readset, select(p[2][0] + 1, &tempset, NULL, NULL, NULL) > 0) {
+        if (FD_ISSET(0, &tempset)) {
+            printf("Standard Input: ");
+            read(0, &buf_char, 1);
+            printf("%c\n", buf_char);
+        }
+        for (int i = 0; i < 3; ++i) {
+            if (FD_ISSET(p[i][0], &tempset)) {
+                if ((nread = read(p[i][0], buf, BUFSIZE)) > 0) {
+                    printf("From child %d: %s\n", buf);
+                }
+            }
+        }
+
+        if (waitpid(-1, NULL, WNOHANG) == -1) return ;
     }
 }
 
-int main() {
-    struct sigaction act;
-    act.sa_handler = sig_handler;
-    sigaction(SIGALRM, &act, NULL);
+void child(int p[2]) {
+    close(p[0]);
+    int num_repeat = getpid() % 5;
+    printf("child %d will send message %d times\n", getpid(), num_repeat);
+    for (int i = 0; i < num_repeat; ++i) {
+        write(p[1], "hello", BUFSIZE);
+        sleep(3);
+    }
 
-    char buf[10];
+    return;
+}
+
+int main() {
+    int p[3][2];
 
     for (int i = 0; i < 3; ++i) {
-        printf("COUNT #%d\n", i);
-        time_out = 0;
-        alarm(2);
-        scanf("%s", buf);
-        alarm(0);
-        if (!time_out) {
-            break;
+        if (pipe(p[i]) == -1) {
+            perror("pipe");
+            exit(1);
+        }
+        switch (fork()) {
+            case -1:
+                perror("fork");
+                exit(1);
+            case 0:
+                child(p[i]);
         }
     }
 
-    if (!time_out)
-        printf("%s\n", buf);
-    else
-        printf("TIME OUT !!\n");
+    parent(p);
 
     return 0;
 }
